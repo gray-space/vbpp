@@ -1,0 +1,2 @@
+rem * control D char
+d${Cmd}= chr$(4)

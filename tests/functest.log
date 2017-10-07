@@ -1,0 +1,6 @@
+VirtualBasic - INFO - Sat Oct  7 14:44:00 2017 Compiling tests/functest.baz
+VirtualBasic - INFO - Read variable file FuncTestVars.json
+VirtualBasic - WARNING - File functest Line 23: use of undeclared variable x.
+VirtualBasic.write_var_file - INFO - Wrote variable file FuncTestVars.json.
+VirtualBasic.convert - INFO - Conversion complete
+VirtualBasic - INFO - Writing to: tests/functest.bas

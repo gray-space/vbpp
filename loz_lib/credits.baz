@@ -1,0 +1,35 @@
+rem * credits.baz
+£splash
+	rem * screen splash
+	text:home
+	
+	rem * text eight
+	vtab(3):print
+	
+	vtab(peek(37) + 2)
+	s${sentence}= "applesoft basic code":gosub @centertext
+	print s${sentence}
+	
+	vtab(peek(37) + 2)
+	s${sentence}= "by andres aka loz":gosub @centertext
+	print s${sentence}
+	
+	vtab(peek(37) + 2)
+	s${sentence}= "copyleft 2010-2012":gosub @centertext
+	print s${sentence}
+return
+
+£credits
+	rem * screen credits
+	text:home
+	rem * hauteur texte depart
+	vtab(3):print
+	
+	vtab(peek(37) + 2)
+	s${sentence}= "by andres aka loz":gosub @centertext
+	print s${sentence}
+	
+	vtab(peek(37) + 2)
+	s${sentence}= "copyleft 2010-12":gosub @centertext
+	print s${sentence}
+return

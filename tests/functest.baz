@@ -1,0 +1,53 @@
+// Test functions
+#DEFINE VARFILE FuncTestVars.json
+
+PRINT "Hello world!"
+Print "testing function calls"
+print @HelloWorld(5)
+REM Statement with multiple function calls
+integer result
+result = @addInts(5, 10) + @addInts(20, 30)
+print "@addInts(5, 10) + @addInts(20, 30) is: ";result
+
+REM standalone function call shouldn't leave behind a variable reference
+@printString("This worked!")
+
+print "The factorial of 7 is: "; @factorial(7)
+
+END
+
+// Return a string containing "Hello World!" multiple times
+FUNCTION string HelloWorld(float length)
+    string mystr 
+    mystr = ""
+    FOR x = 1 to length
+        mystr += "Hello World! "
+    Next x
+    return mystr
+ENDFUNCTION
+
+// Simple function to add two numbers together
+FUNCTION integer addInts(integer a, integer b)
+    string mystr = ""
+    return a + b
+ENDFUNCTION
+
+// Test function to have multiple parameters of the same type.
+FUNCTION integer twoOfEach( integer a, integer b, float c, float d, string e string f)
+    REM Stuf gets done here
+    print "We did something"
+    return 1
+ENDFUNCTION
+
+FUNCTION integer printString(string value)
+    print value
+    return 1
+ENDFUNCTION
+
+FUNCTION float factorial(float number)
+    // print "Calculating the factorial of: ";number
+    if number <= 1 then return 1
+    return @factorial(number - 1) * number
+ENDFUNCTION
+
+

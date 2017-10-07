@@ -1,0 +1,232 @@
+REM ****************************************
+REM Test includes.
+#include testinclude.baz
+
+REM ****************************************
+REM * Define constants
+#define MAXINT = 65535
+#define foobar = ping
+REM #defined flags w/o a value are assigned 1.
+#define DEBUG
+REM alias is an alias for define
+#alias spam = eggs
+
+REM The following ifdef should include 
+#ifdef DEBUG
+REM Debugging stuff
+print "I am looking for bugs!"
+#endif
+REM I'm after the ifdef
+
+REM Following ifndef should not be true and will not geneate code
+#ifndef DEBUG
+REM Not debuggung
+PRINT "I am not looking for bugs"
+#endif
+REM I'm after the #ifndef
+
+#ifdef NOT_DEFINED
+REM Hey! That wasn't supposed to be defined!
+#endif
+
+#ifndef NOT_DEFINED
+REM This appears if NOT_DEFINED is not defined
+#endif
+
+REM Testing ifdef nesting
+#ifdef DEBUG
+    REM This should not be skipped
+#ifdef NOT_DEFINED
+    REM This should be skipped
+    REM AS well as this
+#endif
+    REM This should still appear
+#endif
+
+#ifdef CMDOPT
+    REM The CMDOPT option was passed on the command line
+#endif
+
+
+REM ************************
+REM * Indented if-then
+REM * 
+REM 
+
+longif a < 10 or a > 20 then
+    print "A is in range."
+    a++
+else
+    print "A is not in range"
+endif
+print "Continuing on..."
+
+
+REM *********************************
+REM * If-the-else in an if-then works
+longif a < 10 or a > 20 then if b = 0 then
+    print "A < 10 or A > 20 and b = 0."
+    a++:b++
+else
+    print "A < 10 or A > 20 and b <> 0."
+endif
+REM * end of if then else in an if then
+
+REM **********************************
+REM * If then else on one line
+REM IF a > 0 then print "A is greater than 0" : A+=1 : else print "A <= 0" : A = 0
+// IF a > 0 then print "A is greater than 0" : A+=1 : else print "A <= 0" : A = 0
+REM * End of if then else on one line
+
+REM Create an arbitrary label that we can goto/gosub to.
+_MyLabel
+REM ***************************************************
+REM * Varaible definitons
+REM * 
+REM * Define several variable types.
+float myfloatvar : integer anotherIntVar
+integer myintvar
+string bar
+string strarr(5) : REM string strarr(5)
+float froob(100) : REM float froob(100)
+float boing, boop, florg
+integer bing(av)
+REM End variable test
+myintvar=0
+myintvar+=1
+print "This is the value of myintvar:"; myintvar++
+
+froob(1) = boing * florg
+
+
+
+REM *******************************
+REM * Test plus equals operator
+
+a = 0
+REM a+=5 : b-=a + 5
+a+=5 : b-=a + 5
+REM *
+REM * Plusequals operator with array ref
+froob(1) += 5 : REM froob(1) += 5
+REM *
+REM *****************************************
+REM *
+REM plus plus operator
+REM b = a++ + 5
+b = a++ + 5
+REM b = b++ - 5
+b = b++ - 5 : REM intervening statement
+
+REM **************************************
+REM *
+
+REM a++ in rem statements should be ignored.
+
+REM a++ statement by itself should not leave behind a varref
+REM a++ : b++ : print a; " "; B
+a++ : b++ : print a; " "; B
+REM print "The result of printing a++ is "; a++
+print "The result of printing a++ is "; a++
+
+REM *******************************************
+REM * Multiple post incremements in a single statement
+REM c++ = a++ + b++
+c++ = a++ + b++
+REM *
+REM ***************************************
+REM * Postop with array reference
+REM froob(1)++ Array reference alone
+froob(1)++ 
+REM PRINT "froob(1)++ is: "; froob(1)++ : REM intermediate statement
+PRINT "froob(1)++ is: "; froob(1)++ : REM intermediate statement
+REM variable ref in array reference
+REM froob(a)++ : REM froob(a)++
+froob(a)++ : REM froob(a)++
+REM ****************************************
+REM * Post increment in array ref
+REM froob(a++) = 1
+froob(a++) = 1
+REM ****************************************
+REM * Post increment in an array reference that is post incremented 
+REM * NOT A RECOMMENDED USE CASE!
+REM froob(a++)++
+froob(a++)++
+REM ****************************************
+REM *
+
+
+text:home
+// Here's a comment.
+print "foobar spam MAXINT"
+
+gosub @splash // Comments at the end of the line with //?
+vtab(peek(37) + 2):s$= "* hello world *":gosub @centertext:? s$:get s$
+he$= "hello world"
+?
+lo= len(he$)
+
+// Start here!
+_begin
+for b1= 1 to lo
+htab(b1+14)
+? mid$(he$,b1,1)
+gosub @keyboardcapture
+next
+goto @begin
+
+// Goodbye!
+_endprogram
+text:home:poke 49168,0
+gosub @credits
+end
+
+// Show the splash page
+_splash
+text:home
+vtab(3):?
+vtab(peek(37) + 2)
+s$= "applesoft basic code":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "by andres aka loz":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "copyleft 2010-2012":gosub @centertext
+? s$
+return
+
+_testCode 
+print "Hey! This is a test!"
+
+// Show the credits
+_credits
+text:home
+vtab(3):?
+vtab(peek(37) + 2)
+s$= "by andres aka loz":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "copyleft 2010-12":gosub @centertext
+? s$
+return
+
+
+
+_centertext
+t9%= int( (peek(33) - len(s$) ) / 2 )
+if (t9% < 1) then t9%= 0
+htab(t9%+1)
+return
+_keyboardcapture
+ki%= peek(49152)
+poke 49168,0
+if ki% = 197 goto @endprogram
+if ki% = 155 then end
+if ki% = 212 then text
+return
+
+REM This tests blank line and colon removal
+
+print "The empty colon at the end of thgis line should be removed" :
+print "The Double colon should be reduced to a single colon" : : REM There

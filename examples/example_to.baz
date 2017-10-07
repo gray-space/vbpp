@@ -1,0 +1,55 @@
+new
+rem - example.bas - 16/07/2012 - 22h16 - by - andres - aka - loz - copyleft
+text:home
+gosub @splash
+vtab(peek(37) + 2):s$= "* hello world *":gosub @centertext:? s$:get s$
+he$= "hello world"
+?
+lo= len(he$)
+£begin
+for b1= 1 to lo
+htab(b1+14)
+? mid$(he$,b1,1) 
+gosub @keyboardcapture
+next 
+goto @begin
+£endprogram
+text:home:poke 49168,0
+gosub @credits
+end
+£splash
+text:home
+vtab(3):?
+vtab(peek(37) + 2)
+s$= "applesoft basic code":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "by andres aka loz":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "copyleft 2010-2012":gosub @centertext
+? s$
+return
+£credits
+text:home
+vtab(3):?
+vtab(peek(37) + 2)
+s$= "by andres aka loz":gosub @centertext
+? s$
+vtab(peek(37) + 2)
+s$= "copyleft 2010-12":gosub @centertext
+? s$
+return
+£centertext
+t9%= int( (peek(33) - len(s$) ) / 2 )
+if (t9% < 1) then t9%= 0
+htab(t9%+1)
+return
+£keyboardcapture
+ki%= peek(49152)
+poke 49168,0
+if ki% = 197 goto @endprogram
+if ki% = 155 then end
+if ki% = 212 then text
+return
+run

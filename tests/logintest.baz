@@ -1,0 +1,10 @@
+REM Testing long ifs
+float number
+INPUT "Input a number: ";number
+
+LONGIF number < 10 then
+    print "The number was less than 10."
+else
+    print "The number was greater than or equal to 10"
+endif
+

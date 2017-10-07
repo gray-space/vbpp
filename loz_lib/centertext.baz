@@ -1,0 +1,6 @@
+£centertext
+	t9%{leftSpace}= int( (peek(33) - len(s${sentence}) ) / 2 ) 
+	rem * is result is null
+	if (t9% < 1) then t9%= 0
+	htab(t9%{leftSpace}+1)
+return

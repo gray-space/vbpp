@@ -1,0 +1,69 @@
+#define STRICT
+float CurrVal,StatementLo,StatementHi,OnErrLo,OnErrHi,OnErrLineNoLo,OnErrLineNoHi
+float err1flag, err1lo, err1hi
+CurrVal = peek(216)
+print "Onerr raw status peek(216): "; CurrVal
+print "Onerr Status: $"; @IntToHex(CurrVal)
+
+float txtpsvlo, txtpsvhi, curlsvlo, curlsvhi
+
+// REM: ah ha! CURLSV apparely stores the onerr handler address.
+
+
+ONERR Goto @errhandler1
+
+
+
+err1flag=peek(216) : txtpsvlo = peek(244) : txtpsvhi = peek(245)
+curlsvlo=peek(246) : curlsvhi = peek(247)
+
+print "Onerr Status after setting Onerr handler: ";err1flag
+
+print "CURLSV addresses: ";err1lo;" ";err1hi
+print "txtpsv addressed: ";txtpsvlo;" ";txtpsvhi
+
+// ah ha! CURLSV apparely stores the onerr handler address.
+print "CURLSV values: "; peek(246) ; " " ;peek(247)
+print "TXTPSV values: ";  peek(244) ; " " ;peek(245)
+
+ONERR Goto @errhandler2
+
+print "---------"
+print "Onerr Status after setting Onerr handler2: $"; peek(216)
+
+// REM: ah ha! CURLSV apparely stores the onerr handler address.
+print "CURLSV values: "; peek(246) ; " " ;peek(247)
+print "TXTPSV values: ";  peek(244) ; " " ;peek(245)
+// Try to restore the first onerr handler
+
+print "Restoring onerr1 error handler."
+poke 216,err1flag // : poke 244,txtpsvlo : poke 245,txtpsvhi
+poke 246,curlsvlo : poke 247,curlsvhi
+
+print "After trying to restore onerr1 handler:"
+print "CURLSV values: "; peek(246) ; " " ;peek(247)
+print "TXTPSV values: ";  peek(244) ; " " ;peek(245)
+
+print 1 / 0
+end
+
+_errhandler1
+StatementLo = peek(121) : StatementHi = Peek(122)
+print "In Errorhandler1"
+print "Address of first Onerr Statements : $";@IntToHex(StatementLo);" $";@IntToHex(StatementHi)
+OnErrLo = peek(220) : OnErrHi = peek(221)
+Print "Address in ONERR addresses: $";@IntToHex(OnErrLo);" $";@IntToHex(OnErrHi)
+
+end
+
+_errhandler2
+StatementLo = peek(121) : StatementHi = Peek(122)
+print "In ErrorHandler2"
+print "CURLSV values: "; peek(246) ; " " ;peek(247)
+print "TXTPSV values: ";  peek(244) ; " " ;peek(245)
+print "Address of first Onerr Statements : $";@IntToHex(StatementLo);" $";@IntToHex(StatementHi)
+OnErrLo = peek(220) : OnErrHi = peek(221)
+Print "Address in ONERR addresses: $";@IntToHex(OnErrLo);" $";@IntToHex(OnErrHi)
+end
+
+#include IntToHex.baz

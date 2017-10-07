@@ -1,0 +1,6 @@
+integer value1
+value1 = 214
+print "Hex value of "; value1 ;" is "; @IntToHex(value1)
+end
+
+#include IntToHex.baz

@@ -1,0 +1,198 @@
+lomem: 16384
+dim a%(100,100)
+home
+vtab 10: htab 6: print "the mounds of cteia"
+rem ********** maze:3d–plotter
+gosub @ReadMazeData
+d = 2:xc = 1:yc = 1:rr = 5
+sp = 0
+
+_PromptUser
+home : vtab 23: htab 35: if d = 1 then print "n";
+if d = 2 then print "e"
+if d = 3 then print "s"
+if d = 4 then print "w"
+vtab 24: htab 20: print xc;" ";yc;
+r = rr: gosub @PlotMaze
+vtab 22: htab 1: print "move > ";
+
+_GetInput
+vtab 22: htab 7: get a$
+if a$ = chr$ (8) then @TurnLeft
+if a$ = chr$ (21) then @TurnRight
+if a$ = ";" then @MoveForward
+if a$ = "t" then @Teleport
+if a$ = "/" then @MoveBackwards
+goto @GetInput
+
+_TurnLeft
+d = d - 1: if d = 0 then d = 4
+goto @PromptUser
+
+_TurnRight
+d = d + 1: if d = 5 then d = 1
+goto @PromptUser
+
+_MoveForward
+xx = xc:yy = yc: gosub @ExpandCellValue: p = d: if t(d) <> 0 then @IncrementLocation
+
+_BadMove
+print chr$ (7): goto @GetInput
+
+_MoveBackwards
+xx = xc:yy = yc: gosub @ExpandCellValue: p = d - 2: print p: if p < 1 then p = p + 4
+if t(p) = 0 then @BadMove
+
+_IncrementLocation
+sp = 0
+if p = 1 then yc = yc - 1
+if p = 2 then xc = xc + 1
+if p = 3 then yc = yc + 1
+if p = 4 then xc = xc - 1
+goto @PromptUser
+
+_Teleport
+home : vtab 22: htab 1
+input "teleport to (x,y) ";xc,yc
+goto @PromptUser
+
+_PlotMaze
+hgr : hcolor= 1
+// Define periphrial view of current cell
+x1 = 27:y1 = 1:x2 = 183:y2 = 1
+x3 = 183:y3 = 157:x4 = 27:y4 = 157
+x5 = 41:y5 = 15:x6 = 169:y6 = 15
+x7 = 169:y7 = 143:x8 = 41:y8 = 143
+cx = 105:cy = 79
+xv = 2:yv = 18
+x = xc:y = yc
+goto @GetLeftWall
+
+_CalculateCoordinates
+x5 = (x1 + cx) / 2:x8 = x5
+x6 = (x2 + cx) / 2:x7 = x6
+y5 = (y1 + cy) / 2:y6 = y5
+y7 = (y3 + cy) / 2:y8 = y7
+xv = (x5 - x1) / 4:yv = (y4 - y1) / 8
+
+_GetLeftWall
+p = d - 1: if p = 0 then p = 4
+xx = x:yy = y: gosub @ExpandCellValue: if t(p) = 1 then @HandleCellToLeft
+if t(p) = 0 then @PlotLeftPanelWall
+if r <> rr then @PlotLeftPanelDoor
+hplot 29,155 to 29,21 to 27,19: goto @PlotLeftPanelWall
+
+_PlotLeftPanelDoor
+hplot x4 + xv,y4 - xv to x1 + xv,y1 + xv + yv to x5 - xv,(y5 + yv - xv) to x8 - xv,y8 + xv
+
+_PlotLeftPanelWall
+hplot x1,y1 to x5,y5: hplot x4,y4 to x8,y8
+hplot x5,y5 to x8,y8: if r <> rr then hplot x1,y1 to x4,y4
+goto @GetRightWall
+
+_HandleCellToLeft
+gosub @GetAddressOfCellInDirectionP:xx = xe:yy = ye: gosub @ExpandCellValue: if t(d) = 1 then @GetRightWall
+if t(d) = 0 then @PlotLeftFrontFacingWall
+// If not handling periphrial handling, skip.
+if r <> rr then @PlotLeftFrontFacingDoor
+hplot 29,143 to 29,31 to 27,31
+goto @PlotLeftFrontFacingWall
+
+_PlotLeftFrontFacingDoor
+hplot x5 - xv,y8 to x5 - xv,y5 + xv to x1,y5 + xv
+
+_PlotLeftFrontFacingWall
+hplot x1,y5 to x8,y5 to x8,y8 to x1,y8
+
+_GetRightWall
+p = d + 1: if p = 5 then p = 1
+xx = x:yy = y: gosub @ExpandCellValue: if t(p) = 1 then @HandleCellToRight
+if t(p) = 0 then @PlotRightPanelWall
+if r <> rr then @PlotRightPanelDoor
+hplot 181,155 to 181,21 to 183,19: goto @PlotRightPanelWall
+
+_PlotRightPanelDoor
+hplot x3 - xv,y3 - xv to x2 - xv,y2 + xv + yv to x6 + xv,y5 + yv - xv to x7 + xv,y7 + xv
+
+_PlotRightPanelWall
+hplot x2,y2 to x6,y6: hplot x3,y3 to x7,y7
+hplot x6,y6 to x7,y7: if r <> rr then hplot x2,y2 to x3,y3
+goto @ResetCoordsForNextPanel
+
+_HandleCellToRight
+gosub @GetAddressOfCellInDirectionP:xx = xe:yy = ye: gosub @ExpandCellValue: if t(d) = 1 then @ResetCoordsForNextPanel
+if t(d) = 0 then @PlotRightFrontFacingWall
+if r <> rr then @PlotRightFrontFacingDoor
+hplot 181,143 to 181,31 to 183,31
+goto @PlotRightFrontFacingWall
+
+_PlotRightFrontFacingDoor
+hplot x6 + xv,y7 to x6 + xv,y6 + xv to x2,y6 + xv
+
+_PlotRightFrontFacingWall
+hplot x2,y6 to x7,y6 to x7,y7 to x3,y7
+
+_ResetCoordsForNextPanel
+x1 = x5:y1 = y5:x2 = x6:y2 = y6
+x3 = x7:y3 = y7:x4 = x8:y4 = y8
+xx = x:yy = y: gosub @ExpandCellValue:n = t(d)
+if n <> 1 then @SquareOffCorridorEnd
+if d = 1 then y = y - 1
+if d = 2 then x = x + 1
+if d = 3 then y = y + 1
+if d = 4 then x = x - 1
+r= r - 1: if r= 0 then @EndMazePlot
+goto @CalculateCoordinates
+
+_SquareOffCorridorEnd
+hplot x5,y5 to x6,y6 to x7,y7 to x8,y8 to x5,y5
+if n <> 2 then @EndMazePlot
+xv = (x2 - x1) / 8:yv = (y4 - y1) / 8
+hplot x8 + xv,y8 to x5 + xv,y5 + yv to x6 - xv,y6 + yv to x7 - xv,y7
+
+_EndMazePlot
+return
+
+_ExpandCellValue
+t = a%(xx,yy)
+if t< 0 then t= t+ 65536
+s = int (t / 4096)
+t = t - s * 4096
+t(1) = int (t / 512)
+t = t - t(1) * 512
+t(2) = int (t / 64)
+t = t - t(2) * 64
+t(3) = int (t / 8)
+t(4) = t - t(3) * 8
+return
+
+_GetAddressOfCellInDirectionP
+xe = x:ye = y: if p = 1 then ye = ye - 1
+if p = 2 then xe = xe + 1
+if p = 3 then ye = ye + 1
+if p = 4 then xe = xe - 1
+return
+
+_ReadMazeData
+for i = 1 to 10 : for j = 1 to 10 : read a%(j,i) : next j : next i
+print chr$(4);"PR#1" : print chr$(9);"080N"
+for xx = 1 to 10
+    for yy = 1 to 10 
+        gosub @ExpandCellValue
+        print "X: ";xx;" Y:";yy;" 1:";t(1);" 2:";t(2);" 3:";t(3);" 4:";t(4)
+    next yy
+next xx 
+print chr$(4);"PR#0"
+return
+
+
+data 72,65,81,73,17,72,9,72,73,9
+data 520,72,1033,520,1096,513,576,513,512,520
+data 520,576,513,520,520,8,128,74,9,520
+data 584,65,65,513,576,577,1,576,513,520
+data 520,64,129,74,9,64,137,74,1,520
+data 520,72,9,592,529,80,513,512,80,513
+data 648,514,576,1025,1032,1088,137,74,1097,9
+data 640,66,129,66,577,65,521,576,577,513
+data 136,74,137,10,72,65,577,65,9,8
+data 512,576,513,576,577,65,65,1,576,513

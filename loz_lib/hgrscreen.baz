@@ -1,0 +1,8 @@
+£hgrscreen
+	if peek(33) < 41 and mh%{MaxHauteur} > 159 then hg$= "hgr2"
+	if peek(33) < 41 and mh%{MaxHauteur} <= 159 then hg$= "hgr"
+	rem * mod 80 colonnes
+	if peek(33) > 40 then hg$= "hgr"
+	if hg$ = "hgr" then hgr
+	if hg$ = "hgr2" then hgr2
+return

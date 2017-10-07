@@ -1,0 +1,2 @@
+#!/bin/bash
+java -jar Jace.jar -computer.s7card mass -s7.d1 $@

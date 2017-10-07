@@ -1,0 +1,2 @@
+rem * true random number
+def fn alea{true random number}(x) = int(rnd(peek(78)+peek(79)*256) * x + 1)

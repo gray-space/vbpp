@@ -1,0 +1,85 @@
+#include ErrorDefs.baz
+float a
+integer myint
+
+// A top-level try catch to handle uncaught exceptions
+TRY
+    print "Test 1"
+    gosub @test1
+    print "Test 2"
+    gosub @test2
+    print "Test 3"
+    gosub @test3
+    print "Should not reach this line in the main program."
+CATCH ERR_ALL
+    print "Main routine caught an error!"
+    print "This error should be Next withouht a for (0)"
+    print "It actually is: "; peek(222)
+endtry
+
+// Call a subroutine in a try, and generate an
+// Error in its catch statement. Should be caught
+// by this catch.
+TRY
+    print "Test 4"
+    gosub @test4
+    print "Should never reach this line after test4."
+CATCH ERR_DIVIDE_BY_ZERO
+    print "Caught expected divide by zero error"
+CATCH ERR_ALL
+    print "Caught an unexpected error!"
+endtry
+
+
+print "All tests complete."
+end
+
+_test1
+    // A simple try statement to test catching a simple error
+    try
+        print "Intentionally dividing by zero..."
+        a = 100 / 0
+        print "This line in test1 should never be reached..."
+    catch ERR_DIVIDE_BY_ZERO
+        print "Test 1: Correctly caught the divide by zero error"
+    endtry
+    return
+
+_test2
+    // ANother simple test
+    try
+        print "Intentionally causing an overflow..."
+        myint = 30000 * 10
+    catch ERR_ILLEGAL_QUANTITY
+        print "Test 2: Correctly caught illegal quantity"
+    endtry
+    return
+
+_test3 // This time throw an error but do not catch it
+       // Main routine will catch it.
+    try
+        print "Going to do a next without a for..."
+        next // Uh oh! No for!
+        print "Should not have reached this line in test3"
+    catch ERR_DIVIDE_BY_ZERO
+        print "Test 3: Should not have reached this catch for ERR_DIVIDE_BY_ZERO!"
+    catch ERR_SYNTAX_ERROR
+        print "Test 3: Should not have reached this catch for ERR_SYNTAX_ERROR!"
+    endtry
+    return
+
+
+_test4
+    // Throw an error that gets caught
+    try
+        next // No for!
+        print "Should not have reached this line in test4!"
+    catch ERR_NEXT_WITHOUT_FOR
+        print "Correctly caught NEXT withouth for."
+        print "Throwing error in catch statement..."
+        A = 1/0
+    endtry
+    return
+
+
+

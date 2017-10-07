@@ -1,0 +1,27 @@
+x7 = x6
+x4 = x1
+x8 = x5
+
+y6 = y5
+y8 = y7
+y4 = y3
+y2 = y1
+
+
+x1 = FrontLeft 
+x2 = FrontRight
+x5 = BackLeft
+x6 = BackRight
+xv = HorizDoorToWallEdge
+
+y1 = FrontTop
+y4 = FrontBottom
+y5 = BackTop
+Y7 = BackBottom
+yv = VertDoorToWallEdge
+
+Do we want to also record... 8 coordinets for left and right doors, coordinets for
+facing walls, (4 total?) etc? Probably not... since there are a lot of additional 
+coordinates we would need. 5 in total is probably OK.
+
+

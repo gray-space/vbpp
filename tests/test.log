@@ -1,0 +1,14 @@
+VirtualBasic - INFO - Sat Oct  7 14:44:00 2017 Compiling tests/test.baz
+VirtualBasic - WARNING - File test Line 56: use of undeclared variable a.
+VirtualBasic - WARNING - File test Line 67: use of undeclared variable b.
+VirtualBasic - WARNING - File test Line 93: use of undeclared variable av.
+VirtualBasic - WARNING - File test Line 135: use of undeclared variable c.
+VirtualBasic - WARNING - File test Line 164: use of undeclared variable s$.
+VirtualBasic - WARNING - File test Line 165: use of undeclared variable he$.
+VirtualBasic - WARNING - File test Line 167: use of undeclared variable lo.
+VirtualBasic - WARNING - File test Line 167: use of undeclared variable len(.
+VirtualBasic - WARNING - File test Line 171: use of undeclared variable b1.
+VirtualBasic - WARNING - File test Line 217: use of undeclared variable t9%.
+VirtualBasic - WARNING - File test Line 222: use of undeclared variable ki%.
+VirtualBasic.convert - INFO - Conversion complete
+VirtualBasic - INFO - Writing to: tests/test.bas

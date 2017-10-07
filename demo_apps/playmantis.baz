@@ -1,0 +1,50 @@
+{*** my program PRAYING MANTIS ***}
+section intro
+	===insert lib/maxscreen.baz===
+	===insert lib/cipi.baz===
+	text:home
+	gosub @splash
+	vtab(peek(37) + 2):s$= "* PRAYING MANTIS *":gosub @centertext:print s$:get s$
+	xo{xcenter}= mw%{widthMax}/2:yo{ycenter}= mh%{HeightMax}/2
+closesection
+section main program
+	x1= xo{xcenter}:y1= yo{ycenter}
+	ct{space edge}= 154
+	dg{half diagonal}= sqr( (ct*ct) + (ct*ct) ) / 2 {half diagonal of the grid}
+	rem * to have horizontal position of the figure ac{angle225}= pi * 0.625
+	ac{angle225}= ci * 0.625
+	av= 0
+	ry%{circleRadius}= int(dg{halfDiagonalOfFigure})
+	£begin{*** forever loop ***}
+		s{step}= (ci{circumference in radians} / 12) {circle increase}
+		rem rotate right
+		for b1= 0 to ci step s
+			gosub @hgrscreen
+			hcolor = 1
+			v1= ry% * sin(ac - b1)
+			v2= ry% * cos(ac - b1)
+			x1= xo{xcenter} + v1
+			y1= yo{ycenter} + v2
+			===insert mantis-ra.baz===
+			av = av - s
+			de%= 5000:gosub @delay
+			gosub @keyboardcapture
+		next
+		goto @begin
+	£endprogram
+	text:home:poke 49168,0
+	gosub @credits
+	end
+closesection
+section subscripts
+	{*** subscripts ***}
+	£delay
+		for b9= 1 to 10000:next
+	return
+	===insert lib/hgrscreen.baz===
+	===insert lib/checkxy.baz===
+	===insert lib/credits.baz===
+	===insert lib/centertext.baz===
+	===insert lib/keyboardcapture.baz===	
+closesection
+

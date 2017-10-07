@@ -1,0 +1,9 @@
+Things to fix:
+
+Change over to using standard python logger.
+Move tokenizer to its own class.
+Change names to adhere to PEP8.
+Create python-based Applesoft tokenizer.
+
+
+

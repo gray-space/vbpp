@@ -1,0 +1,38 @@
+REM Testing long ifs
+float number
+INPUT "Input a number: ";number
+
+LONGIF number < 10 then
+    print "The number was less than 10."
+else
+    print "The number was greater than or equal to 10"
+endif
+
+REM try a nested logif
+
+INPUT "Input another number"; number
+
+LONGIF number < 10 then
+    longif number > 0 and number < 5 then
+        print "number is between 0 and 5"
+    else
+        print "number is not between 0 and 5 but less than 10"
+    endif
+else 
+    print "Number is greater than 10"
+endif
+
+REM Test elseif
+print "Testing elseif"
+longif number < 10 then
+    print "Number is less than 10"
+elseif number < 20 then 
+    print "Number is less than 20"
+elseif number < 30 then 
+    print "Number is less than 30"
+else
+    print "Number is 30 or greater"
+endif
+
+
+end 

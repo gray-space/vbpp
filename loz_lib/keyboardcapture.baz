@@ -1,0 +1,13 @@
+£keyboardcapture
+	rem * capture last keyboard entered
+	ki%{keyboardInput}= peek(49152)
+	rem * reset
+	poke 49168,0
+	rem * actions
+	193->218 = A->Z
+	225->250 = a-z
+	176->185 = 0-9
+	if ki%{keyboardInput} = 197{key E end} then @endprogram
+	if ki%{keyboardInput} = 155{Escape} then end
+	if ki%{keyboardInput} = 212{key T} then text
+return

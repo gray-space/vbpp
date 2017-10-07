@@ -1,0 +1,8 @@
+#define VARFILE VarFileTest.vars
+
+
+string mystring = "Hello World!"
+integer xval, yval, zval = 0
+print mystring
+print "The defined varfile is 'VARFILE'"
+end

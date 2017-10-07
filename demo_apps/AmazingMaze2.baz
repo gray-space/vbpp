@@ -1,0 +1,311 @@
+// Force all variables ot be declared
+#DEFINE STRICT
+lomem: 16384
+integer MazeData(10,10,5)
+home
+vtab 10: htab 6: print "the mounds of cteia"
+// Disable onscreen echo
+print chr$(4);"PR#1"
+print chr$(9);"080N"
+print chr$(4);"PR#0"
+rem ********** maze:3d–plotter
+float rr = 5
+float CellData(10)
+
+gosub @ReadMazeData
+gosub @PopulateCoordinates
+float p, d, x, y, xe, ye, xx, yy, n, t, s, i, j
+
+
+d = 2: float MazeXLocation = 1: float MazeYLocation = 1:
+float sp = 0
+
+_PromptUser
+home : vtab 23: htab 35: if d = 1 then print "n";
+if d = 2 then print "e"
+if d = 3 then print "s"
+if d = 4 then print "w"
+vtab 24: htab 20: print MazeXLocation;" ";MazeYLocation;
+float r = rr: gosub @PlotMaze
+vtab 22: htab 1: print "move > ";
+
+_GetInput
+string UserInput
+vtab 22: htab 7: get UserInput
+if UserInput = chr$(8) then @TurnLeft
+if UserInput = chr$(21) then @TurnRight
+if UserInput = ";" then @MoveForward
+if UserInput = "t" then @Teleport
+if UserInput = "/" then @MoveBackwards
+goto @GetInput
+
+_TurnLeft
+d = d - 1: if d = 0 then d = 4
+goto @PromptUser
+
+_TurnRight
+d = d + 1: if d = 5 then d = 1
+goto @PromptUser
+
+_MoveForward
+p = d: if MazeData(MazeXLocation,MazeYLocation,d) <> 0 then @IncrementLocation
+// float xx = : float yy = MazeYLocation: gosub @ExpandCellValue: p = d: if CellData(d) <> 0 then @IncrementLocation
+
+_BadMove
+print chr$(7): goto @GetInput
+
+_MoveBackwards
+// xx = MazeXLocation:yy = MazeYLocation: gosub @ExpandCellValue:  p = d - 2: print p: if p < 1 then p = p + 4
+p = d - 2: print p: if p < 1 then p = p + 4
+if MazeData(MazeXLocation,MazeYLocation,p) = 0 then @BadMove
+
+_IncrementLocation
+sp = 0
+if p = 1 then MazeYLocation = MazeYLocation - 1
+if p = 2 then MazeXLocation = MazeXLocation + 1
+if p = 3 then MazeYLocation = MazeYLocation + 1
+if p = 4 then MazeXLocation = MazeXLocation - 1
+goto @PromptUser
+
+_Teleport
+home : vtab 22: htab 1
+input "teleport to (x,y) ";MazeXLocation,MazeYLocation
+goto @PromptUser
+
+_PlotMaze
+hgr : hcolor= 1
+// Define periphrial view of current cell
+float depth = 1
+
+FrontLeft = MazeCoords(depth, LEFT_IDX) : FrontTop = MazeCoords(depth, TOP_IDX)  : FrontRight = MazeCoords(depth, RIGHT_IDX) 
+FrontBottom = MazeCoords(depth, BOTTOM_IDX)   : HorizDoorToWallEdge = MazeCoords(depth, DOOR_HORIZ_IDX)  : VertDoorToWallEdge = MazeCoords(depth, DOOR_VERT_IDX) 
+
+//FrontLeft = 27:FrontTop = 1:FrontRight = 183
+//FrontBottom = 157
+depth+=1
+BackLeft = MazeCoords(depth, LEFT_IDX) : BackTop = MazeCoords(depth, TOP_IDX)  : BackRight = MazeCoords(depth, RIGHT_IDX) 
+BackBottom = MazeCoords(depth, BOTTOM_IDX)   : HorizDoorToWallEdge = MazeCoords(depth, DOOR_HORIZ_IDX)  : VertDoorToWallEdge = MazeCoords(depth, DOOR_VERT_IDX) 
+
+
+//BackLeft = 41:BackTop = 15:BackRight = 169:BackTop = 15
+//BackRight = 169:BackBottom = 143:BackLeft = 41:BackBottom = 143
+CenterX = 105:CenterY = 79
+// HorizDoorToWallEdge = 2:VertDoorToWallEdge = 18
+x = MazeXLocation:y = MazeYLocation
+
+
+goto @GetLeftWall
+
+_CalculateCoordinates
+depth = rr + 1 - r
+
+BackLeft = MazeCoords(depth, LEFT_IDX) : BackTop = MazeCoords(depth, TOP_IDX)  : BackRight = MazeCoords(depth, RIGHT_IDX) 
+BackBottom = MazeCoords(depth, BOTTOM_IDX)   : HorizDoorToWallEdge = MazeCoords(depth, DOOR_HORIZ_IDX)  : VertDoorToWallEdge = MazeCoords(depth, DOOR_VERT_IDX) 
+
+
+
+_GetLeftWall
+
+//print chr$(4);"PR#1"
+//print chr$(9);"080N"
+//print ""
+//print "r: ";r;" d:";d;" MazeXLocation:";MazeXLocation;" MazeYLocation:";MazeYLocation
+//print "FrontLeft=";FrontLeft;" FrontRight=";FrontRight;" BackLeft=";BackLeft;" BackRight=";BackRight;
+//print " HorizDoorToWallEdge=";HorizDoorToWallEdge;
+//print "FrontTop=";FrontTop;" FrontBottom=";FrontBottom;" BackTop=";BackTop;" BackBottom=";BackBottom;
+//print  " VertDoorToWallEdge=";VertDoorToWallEdge
+//print chr$(4);"PR#0"
+
+p = d - 1: if p = 0 then p = 4
+if MazeData(x,y,p) = 1 then @HandleCellToLeft
+// xx = x:yy = y: gosub @ExpandCellValue: if CellData(p) = 1 then @HandleCellToLeft
+// if CellData(p) = 0 then @PlotLeftPanelWall
+if MazeData(x,y,p) = 0 then @PlotLeftPanelWall
+if r <> rr then @PlotLeftPanelDoor
+hplot 29,155 to 29,21 to 27,19: goto @PlotLeftPanelWall
+
+_PlotLeftPanelDoor
+hplot FrontLeft + HorizDoorToWallEdge,FrontBottom - HorizDoorToWallEdge to FrontLeft + HorizDoorToWallEdge,FrontTop + HorizDoorToWallEdge + VertDoorToWallEdge to BackLeft - HorizDoorToWallEdge,(BackTop + VertDoorToWallEdge - HorizDoorToWallEdge) to BackLeft - HorizDoorToWallEdge,BackBottom + HorizDoorToWallEdge
+
+_PlotLeftPanelWall
+hplot FrontLeft,FrontTop to BackLeft,BackTop: hplot FrontLeft,FrontBottom to BackLeft,BackBottom
+hplot BackLeft,BackTop to BackLeft,BackBottom: if r <> rr then hplot FrontLeft,FrontTop to FrontLeft,FrontBottom
+goto @GetRightWall
+
+_HandleCellToLeft
+// gosub @GetAddressOfCellInDirectionP:xx = xe:yy = ye: gosub @ExpandCellValue: if CellData(d) = 1 then @GetRightWall
+gosub @GetAddressOfCellInDirectionP:  if MazeData(xe,ye,d) = 1 then @GetRightWall
+if MazeData(xe,ye,d) = 0 then @PlotLeftFrontFacingWall
+// If not handling periphrial cell, skip.
+if r <> rr then @PlotLeftFrontFacingDoor
+hplot 29,143 to 29,31 to 27,31
+goto @PlotLeftFrontFacingWall
+
+_PlotLeftFrontFacingDoor
+hplot BackLeft - HorizDoorToWallEdge,BackBottom to BackLeft - HorizDoorToWallEdge,BackTop + HorizDoorToWallEdge to FrontLeft,BackTop + HorizDoorToWallEdge
+
+_PlotLeftFrontFacingWall
+hplot FrontLeft,BackTop to BackLeft,BackTop to BackLeft,BackBottom to FrontLeft,BackBottom
+
+_GetRightWall
+p = d + 1: if p = 5 then p = 1
+// xx = x:yy = y: gosub @ExpandCellValue: if CellData(p) = 1 then @HandleCellToRight
+if MazeData(x,y,p) = 1 then @HandleCellToRight
+if MazeData(x,y,p) = 0 then @PlotRightPanelWall
+if r <> rr then @PlotRightPanelDoor
+hplot 181,155 to 181,21 to 183,19: goto @PlotRightPanelWall
+
+_PlotRightPanelDoor
+hplot FrontRight - HorizDoorToWallEdge,FrontBottom - HorizDoorToWallEdge to FrontRight - HorizDoorToWallEdge,FrontTop + HorizDoorToWallEdge + VertDoorToWallEdge to BackRight + HorizDoorToWallEdge,BackTop + VertDoorToWallEdge - HorizDoorToWallEdge to BackRight + HorizDoorToWallEdge,BackBottom + HorizDoorToWallEdge
+
+_PlotRightPanelWall
+hplot FrontRight,FrontTop to BackRight,BackTop: hplot FrontRight,FrontBottom to BackRight,BackBottom
+hplot BackRight,BackTop to BackRight,BackBottom: if r <> rr then hplot FrontRight,FrontTop to FrontRight,FrontBottom
+goto @ResetCoordsForNextPanel
+
+_HandleCellToRight
+//gosub @GetAddressOfCellInDirectionP:xx = xe:yy = ye: gosub @ExpandCellValue: if CellData(d) = 1 then @ResetCoordsForNextPanel
+gosub @GetAddressOfCellInDirectionP:  if  MazeData(xe,ye,d) = 1 then @ResetCoordsForNextPanel
+if MazeData(xe,ye,d) = 0 then @PlotRightFrontFacingWall
+if r <> rr then @PlotRightFrontFacingDoor
+hplot 181,143 to 181,31 to 183,31
+goto @PlotRightFrontFacingWall
+
+_PlotRightFrontFacingDoor
+hplot BackRight + HorizDoorToWallEdge,BackBottom to BackRight + HorizDoorToWallEdge,BackTop + HorizDoorToWallEdge to FrontRight,BackTop + HorizDoorToWallEdge
+
+_PlotRightFrontFacingWall
+hplot FrontRight,BackTop to BackRight,BackTop to BackRight,BackBottom to FrontRight,BackBottom
+
+_ResetCoordsForNextPanel
+FrontLeft = BackLeft:FrontTop = BackTop:FrontRight = BackRight:FrontTop = BackTop
+FrontRight = BackRight:FrontBottom = BackBottom:FrontLeft = BackLeft:FrontBottom = BackBottom
+// xx = x:yy = y: gosub @ExpandCellValue:n = CellData(d)
+n = MazeData(x,y,d)
+if n <> 1 then @SquareOffCorridorEnd
+if d = 1 then y = y - 1
+if d = 2 then x = x + 1
+if d = 3 then y = y + 1
+if d = 4 then x = x - 1
+r = r - 1: if r = 0 then @EndMazePlot
+goto @CalculateCoordinates
+
+_SquareOffCorridorEnd
+hplot BackLeft,BackTop to BackRight,BackTop to BackRight,BackBottom to BackLeft,BackBottom to BackLeft,BackTop
+if n <> 2 then @EndMazePlot
+HorizDoorToWallEdge = (FrontRight - FrontLeft) / 8:VertDoorToWallEdge = (FrontBottom - FrontTop) / 8
+hplot BackLeft + HorizDoorToWallEdge,BackBottom to BackLeft + HorizDoorToWallEdge,BackTop + VertDoorToWallEdge to BackRight - HorizDoorToWallEdge,BackTop + VertDoorToWallEdge to BackRight - HorizDoorToWallEdge,BackBottom
+
+_EndMazePlot
+return
+
+_ExpandCellValue
+t = MazeData(xx,yy)
+if t< 0 then t= t+ 65536
+s = int (t / 4096)
+t = t - s * 4096
+CellData(1) = int (t / 512)
+t = t - CellData(1) * 512
+CellData(2) = int (t / 64)
+t = t - CellData(2) * 64
+CellData(3) = int (t / 8)
+CellData(4) = t - CellData(3) * 8
+return
+
+_GetAddressOfCellInDirectionP
+xe = x:ye = y: if p = 1 then ye = ye - 1
+if p = 2 then xe = xe + 1
+if p = 3 then ye = ye + 1
+if p = 4 then xe = xe - 1
+return
+
+// Defines for index values into plot value cache
+#DEFINE LEFT_IDX 0
+#DEFINE TOP_IDX 1
+#DEFINE RIGHT_IDX 2
+#DEFINE BOTTOM_IDX 3
+#DEFINE DOOR_HORIZ_IDX 4
+#DEFINE DOOR_VERT_IDX 5
+
+
+_PopulateCoordinates
+vtab 11: htab 6: print "Calculating Coordinates"
+float FrontLeft, FrontRight, BackLeft, BackRight, HorizDoorToWallEdge = 0 
+float FrontTop, FrontBottom, BackTop, BackBottom, VertDoorToWallEdge  = 0  
+float MazeCoords(rr+1,6)
+float CenterX = 105: float CenterY = 79
+float loop
+
+for loop = 0 to rr
+    longif loop = 0 then
+        FrontLeft = 27: FrontTop = 1 : FrontRight = 183 : FrontBottom = 157
+        BackLeft = 41 : BackTop = 15 : BackRight = 169  : BackBottom = 143
+        HorizDoorToWallEdge = 2 : VertDoorToWallEdge = 18
+    else
+        FrontLeft = BackLeft : FrontTop = BackTop : FrontRight = BackRight : FrontBottom = BackBottom
+        BackLeft = (FrontLeft + CenterX) / 2 : BackRight = (FrontRight + CenterX) / 2 : BackTop = (FrontTop + CenterY) / 2 
+        BackBottom = (FrontBottom + CenterY) / 2 
+        HorizDoorToWallEdge = (BackLeft - FrontLeft) / 4:VertDoorToWallEdge = (FrontBottom - FrontTop) / 8
+    endif
+    gosub @StoreCoords
+next loop
+//loop += 1
+gosub @StoreCoords
+return
+
+
+// Save the calclucated coordinates.
+_StoreCoords
+MazeCoords(loop, LEFT_IDX) = FrontLeft : MazeCoords(loop, TOP_IDX) = FrontTop : MazeCoords(loop, RIGHT_IDX) = FrontRight
+MazeCoords(loop, BOTTOM_IDX) = FrontBottom : MazeCoords(loop, DOOR_HORIZ_IDX) = HorizDoorToWallEdge : MazeCoords(loop, DOOR_VERT_IDX) = VertDoorToWallEdge
+print chr$(4);"pr#1"
+print chr$(9);"080N"
+print FrontLeft;", ";FrontTop;", ";FrontRight;", ";FrontBottom;", ";HorizDoorToWallEdge;", ";VertDoorToWallEdge
+print chr$(4);"pr#0"
+return
+    
+    
+
+  
+
+_ReadMazeData
+float CellInfo, Special
+vtab 12: htab 6: print "Loading Maze Data"
+for i = 1 to 10 
+    for j = 1 to 10 
+        read CellInfo
+        if CellInfo < 0 then CellInfo += 65536
+        Special = int(CellInfo / 4096)
+        CellInfo -= Special * 4096 // Subtract special flag value
+        MazeData(j,i,1) = int(CellInfo / 512)
+        CellInfo -= MazeData(j,i,1) * 512
+        MazeData(j,i,2) = int(CellInfo / 64)
+        CellInfo -= MazeData(j,i,2) * 64
+        MazeData(j,i,3) = int(CellInfo / 8)
+        MazeData(j,i,4) = CellInfo - MazeData(j,i,3) * 8
+ next j : next i
+
+//print chr$(4);"PR#1": print chr$(9);"080N"
+//for i = 1 to 10
+//    for j = 1 to 10
+//        print "X: ";i;" Y:";j;
+//        for loop = 1 to 4
+//            print " ";loop;":"; MazeData(i,j,loop);
+//        next loop
+//        print ""
+//    next j
+//next i
+//print chr$(4);"PR#0"
+return
+
+
+data 72,65,81,73,17,72,9,72,73,9
+data 520,72,1033,520,1096,513,576,513,512,520
+data 520,576,513,520,520,8,128,74,9,520
+data 584,65,65,513,576,577,1,576,513,520
+data 520,64,129,74,9,64,137,74,1,520
+data 520,72,9,592,529,80,513,512,80,513
+data 648,514,576,1025,1032,1088,137,74,1097,9
+data 640,66,129,66,577,65,521,576,577,513
+data 136,74,137,10,72,65,577,65,9,8
+data 512,576,513,576,577,65,65,1,576,513

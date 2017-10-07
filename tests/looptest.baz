@@ -1,0 +1,70 @@
+float x
+float y
+WHILE x < 10 DO
+    print "X is ";x
+    X++
+    Y = 0
+    WHILE y < 5 DO
+        print "Y is ";y
+        y++
+    WEND
+WEND
+
+// Test Repeat-until simple loop
+print "Repeat-until test"
+x = 0
+Repeat
+    print "X is: ";x
+    x++
+until x > 10
+
+// Test nesting a repeat-until within a while
+x = 0 
+print "Testing repeat-until nested in a while-wend"
+while x < 10 do
+    print "X is ";x
+    x++
+    y = 5
+    print "Y is: ";
+    repeat
+        print y;" ";
+        y--
+    until y < 0
+    print " "
+wend    
+
+// Test breaking out of a loop
+print "Testing breaking out of a loop" 
+x = 0
+WHILE x < 10 DO
+    print "X is ";x
+    X++
+    Y = 0
+    print "Y is ";
+    WHILE y < 5 DO
+        print y;" ";
+        y++
+        if y > 3 then break
+    WEND
+WEND
+
+
+// Test continuing in a loop
+print "Testing continuing a loop" 
+x = 0
+WHILE x < 10 DO
+    print "X is ";x
+    X++
+    Y = 0
+    print "Y is ";
+    WHILE y < 5 DO
+        print y;" ";
+        y++
+        if y < 3 then continue
+        break
+    WEND
+WEND
+
+
+end
+

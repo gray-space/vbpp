@@ -1,0 +1,4 @@
+Notes:
+
+NUInput and Apple Microscope do not coexist well.
+

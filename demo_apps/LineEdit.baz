@@ -1,0 +1,9 @@
+// Line editor
+
+#ifdef
+
+string InString
+string char
+float histPointer
+
+_GetLine

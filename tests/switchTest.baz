@@ -1,0 +1,88 @@
+// Test Switch statements
+float x,y = 0
+
+
+
+print "Testing single-level Switch."
+for x = 1 to 5
+    Switch x
+        case 1
+            print "Case 1."
+        case 2
+            print "Case 2."
+        case 3
+            print "Case 3."
+        default
+            print "Default Case."
+    endswitch
+next x
+print "Done with single-level Switch."
+
+
+print "Testing single-level Switch, no default."
+for x = 1 to 5
+    print "x = ";x;"... ";
+    Switch x
+        case 1
+            print "Case 1.";
+        case 2
+            print "Case 2.";
+        case 3
+            print "Case 3.";
+    endswitch
+    print ""
+next x
+print "Done with single-level Switch, no default."
+
+
+print "Testing nested Switch statements"
+
+for x = 1 to 5
+    Switch x
+        case 1
+            print "Case 1."
+        case 2
+            print "Case 2."
+        case 3
+            for y = 1 to 5
+                Switch y
+                    case 1
+                        print "Case 3.1"
+                    case 2
+                        print "Case 3.2"
+                    case 3
+                        print "Case 3.3"
+                    default
+                        print "Case 3.default"
+                endswitch
+            next y
+        default
+            print "Default Case."
+    endswitch
+next x
+print "End nested Switch test."
+
+print "Start function call in Switch test."
+
+for x = 1 to 5
+    print "x = ";x;"... ";
+    Switch @squared(x)
+        case 1
+            print x;" squared is equal to 1."
+        case @sqroot(x * 8)
+            print x;"^2 = the square root of "; x ;" x 8"
+        case 9
+            print "x must be 3..."
+    endswitch
+next x
+
+end
+
+
+function float squared(float param)
+    return param * param
+endfunction
+
+function float sqroot(float number)
+    return sqr(number)
+endfunction

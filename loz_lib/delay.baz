@@ -1,0 +1,3 @@
+£delay
+	for b9= 1 to de%:next b9
+return

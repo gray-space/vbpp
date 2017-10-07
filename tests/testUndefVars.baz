@@ -1,0 +1,13 @@
+// Test whether VirtuablBasic++ barfs on undefined variables when defining
+#define STRICT
+integer myIntVar
+float myFloatVar
+string myStringVar
+
+myStringVar = "Hello World!"
+myFloatVar = 30.22
+myIntVar = 21
+myUndefVar = myFloatVar * myIntVar
+print "The undef var is ";myUndefVar
+end
+

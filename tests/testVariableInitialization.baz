@@ -1,0 +1,6 @@
+float pi = 3.14159
+float x,y,z = 0.0
+string alert = "Blah blah blah."
+
+print "alert is: ";alert
+print pi + x

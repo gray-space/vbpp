@@ -1,0 +1,714 @@
+dim n(65),s(65),e(65),w(65),it(15),it$(13),flag(10),mn$(15),mh(15),md(15),mp(15),mr(15),mm(15),mc(15)
+for x = 1 to 65: read n(x),s(x),e(x),w(x)
+next : for x = 1 to 13: read it$(x),it(x): next 
+for x = 1 to 15: read mn$(x),mh(x),md(x),mr(x),mp(x): next 
+goto @ShowIntro
+
+_BeginAdventure
+home : print "it is now time for you to begin your    adventure."
+rm = 2: goto @PrintRoomDescription
+
+_Parse
+rem   f.l.i.p.              (full line input parser)
+for z = 1 to 15: if mr(z) = rm then  gosub @MonsterAttacks
+next 
+if rm > 28 and rm < 52 and flag(2) <  > 1 then  print "you trip and break your neck": goto @PlayerDies
+rem  created by gary gray 
+rem  version 1.1 11/23/84 
+if flag = 1 then flag = 0: goto @StartParseLine
+input ">";a$
+if a$ = "" then  goto @isAMonsterHere
+if  len (a$) = 1 then v$ = a$: goto @isAMonsterHere
+if  right$ (a$,1) = " " then a$ =  left$ (a$, len (a$) - 1)
+flag = 0
+
+_StartParseLine
+n$ = "": if a$ <  > "" then do$ = "":v$ = ""
+for x = 1 to  len (a$): if  mid$ (a$,x,1) = " " then v$ =  left$ (a$,x - 1):t$ =  right$ (a$, len (a$) - x): goto @FindArticlesAndPrepositions
+next x: if v$ = "" then v$ = a$: goto @isAMonsterHere
+
+_FindArticlesAndPrepositions
+for x = 1 to  len (t$)
+if  mid$ (t$,x,1) = " " then @HandleArticlesAndPrepositions
+next x:n$ = n$ + t$: goto @isAMonsterHere
+
+_HandleArticlesAndPrepositions
+if  left$ (t$,x - 1) = "the" then t$ =  right$ (t$, len (t$) - x): goto @FindArticlesAndPrepositions
+if  left$ (t$,x - 1) = "and" then flag = 1:a$ = v$ + " " +  right$ (t$, len (t$) - x): goto @isAMonsterHere
+if  left$ (t$,x - 1) = "then" then flag = 1:a$ =  right$ (t$, len (t$) - x): goto @isAMonsterHere
+if  left$ (t$,x - 1) = "." then flag = 1:a$ =  right$ (t$, len (t$) - x): goto @isAMonsterHere
+if  left$ (t$,x - 1) = "to" then t$ =  right$ (t$, len (t$) - x): goto @FindArticlesAndPrepositions
+if  left$ (t$,x - 1) = "with" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+if  left$ (t$,x - 1) = "at" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+if  left$ (t$,x - 1) = "in" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+if  left$ (t$,x - 1) = "onto" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+if  left$ (t$,x - 1) = "into" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+if  left$ (t$,x - 1) = "on" then do$ =  right$ (t$, len (t$) - x): goto @FindDirectObject
+n$ = n$ +  left$ (t$,x):t$ =  right$ (t$, len (t$) - x): goto @FindArticlesAndPrepositions
+
+_FindDirectObject
+for x = 1 to  len (do$): if  mid$ (do$,x,1) = " " then  goto @EliminateDirectObjectThe
+next x: goto @isAMonsterHere
+
+_EliminateDirectObjectThe
+if  left$ (do$,x - 1) = "the" then do$ =  right$ (do$, len (do$) - x): goto @FindDirectObject
+
+_isAMonsterHere
+if  right$ (n$,1) = " " then n$ =  left$ (n$, len (n$) - 1)
+mo = 0
+for x = 1 to 15: if mr(x) = rm and mp(x) > 0 then mo = 1: next
+
+_Handle-Verbs
+if v$ = "n" or v$ = "north" then @MoveNorth
+if v$ = "s" or v$ = "south" then  goto @MoveSouth
+if v$ = "e" or v$ = "east" then  goto @MoveEast
+if v$ = "w" or v$ = "west" then  goto @MoveWest
+if v$ = "go" or v$ = "walk" or v$ = "travel" then v$ = n$: goto @Handle-Verbs
+if v$ = "get" or v$ = "take" then  goto @GetSomething
+if v$ = "drop" then  goto @DropSomething
+if v$ = "open" then  goto @OpenSomething
+if v$ = "attack" then @AttackSomething
+if v$ = "throw" or v$ = "toss" then  goto @ThrowSomething
+if v$ = "read" then  goto @ReadSomething
+if v$ = "search" then  goto @SearchSomething
+if v$ = "inventory" or v$ = "i" then  goto @ShowInventory
+if v$ = "diagnose" then  goto @DiagnoseSomething
+if v$ = "examine" then  goto @ExamineSomething
+if v$ = "look" or v$ = "l" then  goto @DoLook
+if v$ = "light" then  goto @DoLight
+if v$ = "up" or v$ = "u" then  goto @GoUp
+if v$ = "down" or v$ = "d" then  goto @GoDown
+if v$ = "save" then  goto @SaveGame
+print "i don't know how to '";v$;"'": goto @Parse
+rem  movement: north,south,east,west
+
+_MoveNorth
+if mo = 1 then  print "the monster blocks your path": goto @Parse
+longif n(rm) > 0 then 
+    rm = n(rm): goto @PrintRoomDescription 
+else  
+    print "can't go that way":  gosub @bell : goto @Parse
+endif
+
+_MoveSouth
+if mo = 1 then  print "the monster blocks your path": goto @Parse
+longif s(rm) > 0 then 
+    rm = s(rm): goto @PrintRoomDescription
+else  
+    print "can't go that way":  gosub @bell : goto @Parse
+endif
+
+_MoveEast
+if mo = 1 then  print "the monster blocks your path": goto @Parse
+longif e(rm) > 0 then 
+    rm = e(rm): goto @PrintRoomDescription
+else
+    print "can't go that way":  gosub @bell : goto @Parse
+endif
+
+_MoveWest
+if mo = 1 then  print "the monster blocks your path": goto @Parse
+longif w(rm) > 0 then
+    rm = w(rm): goto @PrintRoomDescription
+else
+    print "can't go that way":  gosub @bell : goto @Parse
+endif
+
+_GetSomething
+rem  get-take
+x = 1
+while n$ <> it$(x) and x < 13 do
+    x++
+wend
+REM unknown object
+if n$ = it$(x) and it(x) = rm then it(x) = 70: print : print n$;" taken": goto @Parse
+print "i don't see a ";n$;" here"  : goto @Parse
+
+
+// for x = 1 to 13
+// longif if n$ = it$(x) and it(x) <  > 70 and it(x) = rm then 
+//     it(x) = 70: print : print n$;" taken": goto @Parse
+// else  next : print "i don't see a ";n$;" here"
+// goto @Parse
+rem  drop
+
+_DropSomething
+x = 1
+while x < 13 do
+    if n$ = it$(x) then break
+    x++
+wend
+if n$ = it$(x) and it(x) = 70 then  print n$;" dropped":it(x) = rm: goto @Parse
+print "you don't have a ";n$ : goto @Parse
+
+
+// for x = 1 to 12: if n$ = it$(x) and it(x) = 70 then  print n$;" dropped":it(x) = rm: goto @Parse: else  next : print "you don't have a ";n$
+// goto @Parse
+rem  open
+
+_OpenSomething
+if n$ = "door" and rm = 21 and do$ = "key" and it(12) = 70 then s(21) = 19: print "you open the door easily": goto @Parse
+if n$ = "door" and rm = 21 and do$ = "" then  print "you must tell me what to open the door  with": goto @Parse:  
+if n$ = "door" and rm = 21 and do$ <  > "" and do$ <  > "key" then  print "you can't open the door with that!!!!": goto @Parse
+if n$ = "chest" and it(10) = 70 then  print "inside the chest is a mirad of gold     and other stuff too various to mention":ch = 1: goto @Parse
+if n$ = "chest" then  print "you don't have the chest": goto @Parse
+print "i see no ";n$;" here": goto @Parse
+
+_AttackSomething
+rem  attack
+if rm = 1 then  print "the person at the box looks at you,     then pulls out a black square of unknownmaterial and a loadstone and puts the   two together...": end 
+if do$ = "" and it(3) = 70 then  print "(with sword)": goto @HaveSomethingToAttack: else  print "you don't have the sword": goto @Parse
+if do$ <  > "sword" then  print "you can't attack with that": goto @Parse
+
+_HaveSomethingToAttack
+for x = 1 to 15: if mn$(x) = n$ and mr(x) = rm then  goto @AttemptAttack: else  next : print "i see no ";n$;" here": goto @Parse
+
+_AttemptAttack
+longif  int ( rnd (1) * 20) + 1 <  int ((st + dex) / 2) + 3 then  
+    print "you hit!!!!":  gosub @bell : goto @DamageMonster
+else  
+    print "you miss!!!!": goto @Parse
+endif
+
+_DamageMonster
+d =  int ( rnd (1) * 6) + 1:mp(x) = mp(x) - d: if mp < 0 then mp = 0
+print "and you do ";d;" points of": print "damage": if mp(x) <  = 0 then  print "and you kill it !!!":  gosub @bell :  gosub @bell : goto @Parse 
+print "but he's still alive": goto @Parse
+rem  throw or toss
+
+_ThrowSomething
+if n$ = "torch" and rm = 36 and flag(1) = 1 then  print "the torch ignites the web and thusly    the spider. however, the web gives way  and you fall...": goto @FallInAPit
+if n$ = "torch" then  print "okay, you throw the torch which falls   through the web.":it(4) = 37
+if rm = 45 and it(13) = 70 and n$ = "black flask" or n$ = "flask" then  print "the flask hits the king and shatters    spreading the poison on him and killing him":mp(12) = 0: goto @Parse
+for x = 1 to 15: if it$(x) = n$ and it(x) = 70 then @ThownNonSpecialObject
+print "you don't have the ";n$: goto @Parse
+
+_ThownNonSpecialObject
+print "ok... ";n$;":thrown":it(x) = rm: goto @Parse
+rem  read
+
+_ReadSomething
+if n$ = "scroll" and it(1) = 70 and rm <  > 65 then  print "the scroll says 'read me when shadows   threaten": goto @Parse
+if n$ = "scroll" and it(1) = 70 and rm = 65 and mp(15) > 0 then  print "the shadow lord falls to his knees and  screams 'no!!! not the spell of dismiss-al!!' and as you finish, both he and    the scroll vanish":it(1) = 0:mr(15) = 0: goto @Parse
+print "you can't read that, perhaps examine it first": goto @Parse
+rem  search
+
+_SearchSomething
+if n$ <  > "room" and n$ <  > "passage" and n$ <  > "cave" then  print "sorry, you can search rooms only": goto @Parse
+if rm = 60 then  print "you find a passage that leads north!!!":n(60) = 56: goto @Parse
+if rm = 33 then  print "digging through the ash, you find a     secret passage to the east":e(33) = 34: goto @Parse
+print "you search the ";n$;" and": print "find nothing": goto @Parse
+rem  inventory
+
+_ShowInventory
+print "you are currently holding:"
+for x = 1 to 15: if it(x) = 70 then  print "a ";it$(x): next : goto @Parse
+next : goto @Parse
+rem  diagnose
+
+_DiagnoseSomething
+print "you currently have ";hp;" hit": print "points,down from "; int ((co + st) / 2);" points"
+goto @Parse
+rem  examine
+
+_ExamineSomething
+x = 0
+while x < 13 and it$(x) <> n$ do
+    x++
+wend
+if it$(x) <> n$ or it(x) <> 70 then "You don't have the "; n$ : goto @Parse
+
+ 
+if n$ = "scroll" then  print "try reading the scroll": goto @Parse
+if n$ = "matches" then  print "the matchbook cover says 'why not try a vacation in n0rway this year??": goto @Parse
+if n$ = "bottle" then print "the bottle read 'grandma's faithful hit point restorer, warning don't...": goto @Parse
+if n$ = "goblet" then  print "the goblet has very fine workmanship, inlayed with various precious jewels": goto @Parse:
+if n$ = "scepter" then  print "the scepter has very fine workmanship, inlayed with various precious jewels": goto @Parse
+if n$ = "crown"  then  print "the crown has very fine workmanship, inlayed with various precious jewels": goto @Parse  
+if n$ = "flask"  then  print "then flask reads, 'gramdma's olde rat   poison. use on the king sized rat only": goto @Parse
+for x = 1 to 15: if it$(x) = n$ then @NothingSpecial
+
+_NothingSpecial
+print "i see nothing remarkable about the ": print n$
+goto @Parse
+
+rem  look
+_DoLook
+goto @PrintRoomDescription
+
+rem  light
+_DoLight
+if n$ <  > "lantern" and n$ <  > "torch" and n$ <  > "matches" then  print "you can't light the ";n$: goto @Parse
+if n$ = "matches" and it(5) = 70 then  print "lighting the matches is useless, you    should use them to light things instead": goto @Parse 
+if n$ = "matches" then  print "you don't have them": goto @Parse
+if do$ = "" then  print "you must tell me what to light that     with": goto @Parse
+if do$ <  > "matches" then  print "you can't use that to light the ";n$: goto @Parse
+if it(5) <  > 70 then  print "you don't have the matches": goto @Parse
+if n$ = "torch" and it(4) = 70 then  print "the torch is now lit":flag(1) = 1: goto @Parse: 
+if n$ = "torch" then  print "you don't have that"
+if n$ = "lantern" and it(2) = 70 then  print "the lantern is now lit":flag(2) = 1: goto @Parse: 
+if n$ = "lantern" then  print "you don't have the lantern": goto @Parse
+goto @Parse
+
+_GoUp
+rem  up
+if rm = 19 then  print "you ascend the stairs":rm = 58: goto @PrintRoomDescription
+if rm = 37 then  print "there is no way up the smooth side of   the wall": goto @Parse
+if rm = 4 then  print "you go up the steps...":rm = 1: goto @PrintRoomDescription
+if rm = 8 then  print "you go up the steps...":rm = 3: goto @PrintRoomDescription
+if rm = 52 then  print "you have suprisingly good leverage and  are able to push the grate up and get   out":flag(5) = 1
+if rm = 27 then  print "you go up the long spiral staircase and finally...":rm = 26: goto @PrintRoomDescription
+print "unless you are a bird, you can't get    there from here": goto @Parse
+
+_GoDown
+rem  down
+if rm = 58 then  print "you descend to ground level":rm = 19: goto @PrintRoomDescription
+if rm = 1 then  print "you go down the tower's steps until...":rm = 4: goto @PrintRoomDescription
+if rm = 3 then  print "you trip and fall down the stairs on    your face until...":rm = 8: goto @PrintRoomDescription
+if rm = 26 then  print "you make the long and tedious journey   down into the dark depths...":rm = 27: goto @PrintRoomDescription
+if rm = 24 and flag(5) = 0 then  print "you can't seem to open the grate from   this side": goto @Parse
+if rm = 24 and flag(5) = 1 then  print "okay, you slip down into the muck again":rm = 52: goto @PrintRoomDescription
+print "you can't go that way": goto @Parse
+
+_MonsterAttacks
+rem  monster attacks
+if z = 15 and mc(z) = 0 then  print "the shadow lord jumps off the throne    and says'ha, mortal! i shalt give thee  the first blow'":mc(15) = 1: return 
+if z = 13 and mc(13) = 0 then  print "suddenly, below you the ooze bubbles    and a tentical reaches for you":mc(13) = 1
+if z = 4 and mc(4) = 0 then  print "a large snake approches and says, 'and  now for something completely different":mc(4) = 1
+if z = 8 and mc(8) = 0 then  print "suddenly a suit of armor jumps off a    pedistal and draws it's sword":mc(8) = 1
+if z = 3 and mc(3) = 0 then  print "to add insult to injury,all this commo- tion seems to have roused a creature    from the corner":mc(3) = 1
+if z = 9 and mc(9) = 0 then  print "the spider that owns this web begins to move towards you!!!":mc(9) = 1
+if z = 2 and mc(2) = 0 then  print "suddenly a piece of machinery detaches  itself from the wall and attacks you!!":mc(2) = 1
+if mp(z) <  = 0 then  print "there is a body of a ";mn$(z);" here": return 
+print "a ";mn$(z);" attacks you!!!": if  int ( rnd (1) * 20) + 1 > mh(z) then  print "the attack misses": return 
+d =  int ( rnd (1) * md(z)) + 1: print "the attack does ";d;" points of damage":hp = hp - d: if hp <  = 0 then  print "you die":  gosub @bell :  gosub @bell :  gosub @bell : goto @PlayerDies
+return 
+rem  bottom of the pit
+
+_FallInAPit
+print "you fall with a thud! but seem not to   hurt yourself. ":rm = 37: goto @PrintRoomDescription
+
+_PlayerDies
+rem  you die!!!
+print "you died": end 
+
+_PrintRoomDescription
+rem  print rooms
+REM gosub (rm * 10) + 3050
+// That won't work anymore... sadly. We have to break up the on gotos since all of the rooms cannot
+// fit onto one applesoft line.
+
+
+on int(room / 10) + 1 goto @rooms1-10, @rooms11-20, @rooms21-30, @rooms-31-40, @rooms41-50, @rooms51-60, @rooms61-65
+
+_rooms1-10
+on rm gosub @room1, @room2, @room3, @room4, @room5, @room6, @room7, @room8, @room9, @room10
+goto @postRoomDesc
+
+_rooms11-20
+on rm - 10 gosub @room11, @room12, @room13, @room14, @room15, @room16, @room17, @room18, @room19, @room20
+goto @postRoomDesc
+
+_rooms21-30
+on rm - 20 gosub @room21, @room22, @room23, @room24, @room25, @room26, @room27, @room28, @room29, @room30
+goto @postRoomDesc
+
+_rooms31-40
+on rm - 30 gosub @room31, @room32, @room33, @room34, @room35, @room36, @room37, @room38, @room39, @room40
+goto @postRoomDesc
+
+
+_rooms41-50
+on rm - 40 gosub @room41, @room42, @room43, @room44, @room45, @room46, @room47, @room48, @room49, @room50
+goto @postRoomDesc
+
+_rooms51-60
+on rm - 50 gosub @room51, @room52, @room53, @room54, @room55, @room56, @room57, @room58, @room59, @room60
+goto @postRoomDesc
+
+_rooms61-65
+on rm - 60 gosub @room61, @room62, @room63, @room64, @room65
+
+// Handle listing 
+_postRoomDesc    
+for x = 1 to 15: if it(x) = rm then  print "there is a ";it$(x);" here ": print 
+next 
+goto @Parse
+
+_room1
+print "in this well-lit room sit a person at a strangly constructed contraption,two    boxes, stacked on top if one another.   the topmost box has strange glowing "
+print "symbols on it's front. the bottom one,  which extends at an angle down from the other has an array of buttons on it.    the person working this machine is      muttering strange incantaions like"
+print "'*$%@*!!! overflow errors!!!!'. the      person seems totally engrossed in this ancient ritual and totally ignores you. the only exit is down"
+return 
+
+_room2
+print "you are outside the gate which is to    the north. the doorway, with the port-  cullis up, reminds you ominously of a   giant mouth": return 
+print "this old room apparently use to be a    wizard's labratory. old flasks and      sheets of vellium are scattered about,  all either broken or of no decernable   use. suprisingly, one area is blocked"
+print "off by sand bags (perhaps some very     hurried reserch was conducted before    the invasion...). the only exit is down"
+return 
+
+_room3
+print "you are at what seems to be the base of a tower. stairs lead up and the corridorgoes east and bends north."
+return 
+
+_room4
+print "you are in a dimly lit east-west        corridor. there is a great amout of     debris and old, rusted weapons. but you find no evidence of animal habitation..."
+return 
+
+_room5
+if flag(5) = 1 and flag(3) = 1 and flag(4) = 1 and mp(15) = 0 then  print "you feel in your mind a presence that   scans you, and finally you feel a       message, much the same as when you      entered.": goto @PlayerWins
+if flag(6) = 1 then  print "you are in the entry area of the castle. the portcullis is closed. there is a   large room to the north, and passages   leads east and west.": return 
+flag(6) = 1: print "as you enter the castle, the porcullis  slams down behind you. you feel in your mind a voice so loud that you are       brought to your knees. the voice says"
+print "'ha, mortal, though hast delivered      thineself into my hands. thou shalt     never leave this place alive": return 
+
+_room6
+print "you are in an east-west corridor. there is also a door to the north": return 
+
+_room7
+print "you are at a curve in the corridor. a   stairway leads up and the corridor goes north and west": return 
+
+_room8
+print "you are in a north-south corridor. thereis also a door to the east. the passage seems to get darker further on": return 
+
+_room9
+print "apparently this room was some kind of   barracks with ruined furniture and      personal effects strewn all over the    place. there are doors to the east and  the west": return 
+
+_room10
+print "this large room was apprently the main  hall of the castle. murals and other    works of art have faded with the years  and an intricate stain-glass dome above has been shattered, leaving shards "
+print "to make a sparkling abstract pattern    on the marble floor. the room streches  north and to the south are two large    unhinged doors. also there is a door to the west": return 
+
+_room11
+print "these appear to have been a dorm-type   room with several beds and smashed furn-iture. cob webs are prevalent in the    corners of the room. there are exits    north and south": return 
+
+_room12
+print "you are in a north-south corridor.      there is a door off to the east": return 
+
+_room13
+print "you have entered a great library.       volumes of books line each wall. severalopen books show incomprehensible ruins  and diagrams. the only exit is to the   west": return 
+
+_room14
+print "you are at the back of the grand hall.  here the roof has collapsed, aparently  during the final battle as there are    skeletons of humans and other things    under the debris."
+
+_room15
+print "there is a door to the east and the     great hall stretches south": return 
+
+_room16
+print "you are in apparently the kitchen.      there are rotted food stuffs, pots pans and other utensil scattered about.doors lead south and west": return 
+
+_room17
+print "you are in a north-south corridor. to   the east is a door. the corridor seems  to lighten further on north": return 
+
+_room18
+print "this room is the armory. rusted weapons and armor line the walls all apparently unserviceable. the only exit is west": return
+
+_room19 
+print "you are in the stairwell. stairs        (what were you expecting, an elevator ?) lead up. the only other exit is north": return 
+
+_room20
+print "you are at a bend in the corridor.light comes though an archway leading to the  courtyard. the hallway goes south and   east": return 
+
+_room21
+print "you are in an east-west corridor. an    impressive door is to the north and one to the south which is ";
+if s(23) = 19 then  print "unlocked": return 
+print "locked": return 
+
+_room22
+print "you are in an east-west corridor. there is an opening leading to a large room   north.": return 
+
+_room23
+print "you are at a bend in the corridor.      the corridor now goes west and south.": return 
+
+_room24
+print "this open area once may have been an    impressive courtyard. as it is many of  the cobblestones are missing and trees  withered if not dead. more signs of     battle are prevalent in skeletons and"
+print "broken equiptment. there is a drain in  the center of the courtyard. the only   exit is south": return 
+
+_room25
+print "you are in a chapel. many of the sacred carvings and statues have been defaced  and much of what was intricate woodwork has rotted away": return 
+
+_room26
+print "you are in the knight's hall. tables andchairs are smashed and more evidence of battle is evident. there is a stairway  down and an opening south": return 
+
+_room27
+if flag(2) <  > 1 then  print "it is very dark here, if you don't get  some light then you might trip and breakyour neck": return 
+print "you are at the bottom of the stairwell. passeges lead south and east": return 
+
+_room28
+if flag(2) <  > 1 then  print "you trip and break your neck": goto @PlayerDies
+print "you are at a guard station. old weapons are on racks here. the dust is practi-  cally knee deep here passages lead east and west": return 
+
+_room29
+print "you are in a dank passage leading east  and west. a cell is off to the south": return 
+
+_room30
+print "you have apparently found the torchure  chamber of the dugeon. many rotted      pieces of equptment lie about": return 
+
+_room31
+if flag(2) <  > 1 then  print "you trip and break your neck": goto @PlayerDies
+print "you have entered a room piled high with coal and shovels. a large hole that is  the furnace is to the south": return 
+
+_room32
+print "this cell has several corpses still     attached to the wall by chains. the onlyexit is north": return 
+
+_room33
+print "you are inside the furnace. the chimney stretches up into blackness. the onlt   exit is north": return 
+
+_room34
+print "you are in a large natural cavern.      stalagmites and stalagtites line a path to the east. a hole is west": return 
+
+_room35
+print "you are in a glass-smooth passage.      while you walk you slip and fall,slidinginto a web": for x = 100 to 1 step  - 1: tone x,10: next :rm = 36
+
+_room36
+print "you are stuck in a web. you have a smallamount of mobility in your arms but thatis it": return 
+
+_room37
+print "you are in the bottom of a pit. there isno visible way up. the only exit is east": return 
+
+_room38
+print "you are in a dimly lit e/w corridor.    a musky smell seems to come from the    east": return 
+
+_room39
+print "you are in a cave. there are rat dropp- ings all over the floor. passages lead  north,south and west": return 
+
+_room40
+print "you are in a rat warren. evidence of    rat's habitation are strewn all over thecave": return 
+
+_room41
+print "you ar in a twisty passage leading southand west": return 
+
+_room42
+print "you are in a twisty passage leading     south and east": return 
+
+_room43
+print "you are in a twisty passage that leads  west and south": return 
+
+_room44
+print "in this small there is a small desk herebeside it a rack of small weapons.only  exit is south": return 
+
+_room45
+print "this is the opulent king's room.inlayed with gold and tapestry. the only exit   is north": return 
+
+_room46
+print "you are in a twisty passage leading     north and east": return 
+
+_room47
+print "you are in a twisty passage leading     north south east and west": return 
+
+_room48
+print "you are in a dank stinking sewer (and   you thought adventuring was all glory!!)passages lead south and east": return 
+
+_room49
+print "you are at a breach in the wall of the  sewer and the rat tunnels you may go    east or west": return 
+
+_room50
+print "you are in a twisty passage leading eastand west": return 
+
+_room51
+print "you are in a twisty passage leading     west and north": return 
+
+_room52
+print "you are in the sewer. this is a dead endthere is a grate above you": return 
+
+_room53
+print "you are at a bend in the corridor. it   leads east and south": return 
+
+_room54
+print "you are in an east-west passage. there  is a door also to your south": return 
+
+_room55
+print "you are at a bend in the corridor. the  passages go west and south": return 
+
+_room56
+print "this is the great trasure room. it's    once great stores have been somewhat    depleted.": return 
+
+_room57
+print "you are in a north-south passage": return 
+
+_room58
+print "you are at the top of the stairs. there is a door to your north": return 
+
+_room59
+print "you are in a north-south corridor. thereare impressivly ornate doors to the east": return 
+
+_room60
+print "you are in the king's bedroom. the four-poster feather bed is still in good     condition.the only exit is west": return 
+
+_room61
+print "this is a sitting room overlooking the  countryside. at one time the scene mighthave been breathtaking, but now it's a  panorama of disese and blight.only exit"
+print "is east": return 
+
+_room62
+print "you are at a bend in the corridor. it   leads east and north. there is a door to .the west": return 
+
+_room63
+print "you are in an east-west corridor.to the north is an impressive set of double    doors.": return 
+
+_room64
+print "you are at a bend in the corridor. it   leads north and west.": return 
+
+_room65
+print "you are in the main throne room. this   room still holds all the adornments of  it's former self. as apparently this is the throne room of the shadow lord.": return 
+
+_SaveGame
+print  chr$ (4);"open savegame"
+print  chr$ (4);"write savegame"
+print st: print co: print dex: print hp: print rm
+for x = 1 to 15: print mp(x): print mr(x): next : for x = 1 to 6: print flag(x): next : for x = 1 to 13: print it(x): next 
+print  chr$ (4);"close savegame"
+
+_PlayerWins
+rem  you win!!!!
+data   0,0,0,0,6,0,0,0,0,0,0,0,9,0,5,0,0,0,6,4,11,2,7,5,12,0,8,6,13,0,0,7,17,4,10,0,0,0,11,9,15,6,0,10    
+data    16,7,0,0,23,8,14,0,0,0,0,13,0,11,16,0,0,12,0,15,20,9,18,0,0,0,0,17,21,0,0,0,24,17,21,0,25,0 ,22,20,26,0,23,21  
+data   0,13,0,22,0,20,0,0,0,21,0,0,0,22,0,0,0,31,28,0,0,0,29,27,0,32,30,28,0,0,0,29,27,33,0,0,29,0,0,0,31,0,34,0,0,0,35,33,0,0,0,0,0,0,0,0,0,0,38,0 
+data  0,0,39,37,41,40,0,0,39,0,0,0,0,39,0,47,0,45,43,0,0,46,0,42,0,47,0,0,42,0,0,0,43,0,47,0,44,51,41,46,0,52,49,0
+data   0,0,50,48,0,0,51,49,47,0,0,50,48,0,0,0,0,57,54,0,0,58,53,55,0,59,0,54,0,60,0,0,53,62,0,0,54,0,0,0,55,64,60,0,0,0,0,59,0,0,62,0,57,0,63,61,65,0,64,62,59,0,0,63,0,63,0,0  
+data   "scroll",14,"lantern",2,"sword",2,"torch",27,"matches",2,"bottle",3,"goblet",61,"sceptor",65,"diamonds",25, "ring",60,"crown",65,"key",3,"flask"
+data  16
+data    "rabbit",9,2 ,34,10,"iron maiden",6,3,30,7,"pit thing",8,2,37,13,"monty python"    ,6, 4,11,15,"skeleton",4,1,4,2,"shadow fiend",2,7,25,4 
+data   "rotting corpse",4,2,32,3,"empty armor",5,3,18,6,"spider",2,3,36,32,"rat worker",3,2,40,3,"rat guard",9,4,44,7  
+data  "rat king"
+data   7,5 ,45,11,slime,4,3,48,10,ghoul,12,2,61,12,shadow lord,19,17,65,25
+end 
+
+_ShowIntro
+home : print "for many years the evil castle has      loomed over your village, deserted      since the wars with the deamons. some   say that deamons live there now but     that is unknown. what is know is that";
+print "": print "the treasure of the old kings lies  "
+print "within. some brash and foolish youths   of the village have tried to gain this  treasure, all have failed and most neverreturned. those that did would have     been better dead. are you any different than those that went before ?"
+print : print "     you'd better be...."
+
+_AskForInstructions
+vtab 20
+print "do you need instructions (y/n)?";: get a$
+if a$ = "y" or a$ = "n" then  goto @ShowInstructions
+print "": print  chr$ (7);"incorrect entry please be sure the caps lock key is down and answer again": goto @AskForInstructions
+
+_ShowInstructions
+if a$ = "n" then  goto @ShowMenu
+home : print  tab( 14);"instructions": for x = 1 to 40: print "-";: next 
+print " in this game you play a character that is created for you. your object is to   gather as much treasure as possible. to do this you will have to overcome many"
+print "traps, monsters, and other hazards.     usually there is only one way to solve  each problem. your character is made up of three numbers or statistics. each of these are determined randomly and"
+print "are used mainly to figure your combat   chances (chances to hit, be hit etc.)   after you have created your character   you will start your adventure."
+print : print "press any key to continue....";: get a$
+gosub @CreateCharacter
+gosub @StartingTheAdventure
+goto @BeginAdventure
+
+_CreateCharacter
+home 
+print  tab( 11);"character creation": for ox = 1 to 40: print "-";: next 
+
+_CalcStr
+st =  int ( rnd (1) * 20) + 1: if st < 7 then  goto @CalcStr
+
+_CalcInt
+co =  int ( rnd (1) * 20) + 1: if co < 7 then  goto @CalcInt
+
+_CalcDex
+dex =  int ( rnd (1) * 20) + 1: if dex < 7 then  goto @CalcDex
+hp =  int (co + st) / 2
+print "this is your character:": print : print "strength    :";st: print : print "dexterity   :";dex: print : print "constitution:";co
+
+_AskKeepChar
+print : print "20 is the highest possible. about 9 or  10 is average. ": print : print "you may k)eep this character or m)ake   a new one. please enter your command    (k or m)";
+get a$: if a$ <  > "k" and a$ <  > "m" then  print "": print "please answer k or m only":  gosub @bell : goto @AskKeepChar
+if a$ = "m" then @CreateCharacter
+return 
+
+_StartingTheAdventure
+home 
+htab 10: print "starting the adventure"
+print "----------------------------------------";
+htab 2: print "now that you have your character, it is";
+print "time to start your adventure. the comput";
+print "er will expect you to give it orders in"
+print "a full-sentence format.  although you"
+print "can enter anything, only a few key words";
+print "will be recognized. a list of these"
+print "words will follow. several examples of"
+print "how to enter text are:"
+htab 2: print "1 to get more than one thing, use 'and'";
+print "i.e. 'get the rock and the candy' this"
+print "is the only allowable use of 'and'"
+htab 2: print "2 use 'with' to specify what you are"
+print "using to complete a task example"
+print "'attack the computer with the hatchet'"
+htab 2: print "3 use 'then' to make more than one move";
+print "at a time i.e. 'go west then east'"
+inverse : print "warning!!!";: normal : print " use only statments that"
+print "require ";: inverse : print "no direct object";: normal : print " such as 'get'"
+print "and 'go'. it is much easier just to do"
+print "things one at a time, for you and the"
+print "computer. press any key to continue";: get a$
+home : print "  4 other prepositions that are allowed"
+print "are: 'in' 'at' 'onto' 'on'"
+htab 3: print "5 note that 'the' is totally ignored"
+print "so that you may use it as much as you"
+print "like such as 'get the the the car'"
+htab 13: print "-----------------"
+htab 3: print "a list of the words, and explainations";
+print "that this program will except are as"
+print "follows:"
+print "north,south,east,west will move you in"
+print "that direction. these maybe commands in"
+print "themselves, just type in 'north'. also"
+print "these are abbreviated to n,s,e,w"
+vtab 14: htab 2: print "get or take"
+vtab 16: htab 2: print "drop- drops an item i.e. 'drop the gun'";
+vtab 18: htab 2: print "open, throw or toss, read, attack and     light"
+vtab 20: htab 2: print "search- look for hidden things in a"
+htab 2: print "room"
+print "   press any key to continue";: get a$
+home 
+htab 2: print "diagnose- this will give you a report"
+print "of your current pysical condition"
+vtab 4: htab 2: print "examine- this will have you study an"
+print "object for anything unusual"
+vtab 7: htab 2: print "look or l- reprints the room descrip-"
+print "tion"
+vtab 10: htab 2: print "inventory or i- gives you a list of"
+print "everything you are carrying"
+vtab 13: htab 2: print "if any action that you want to try is"
+print "not shown above, it probably won't work"
+vtab 16: htab 2: print "save- saves the game at the position"
+print "you are in and stops the game. when you"
+print "run the program again, select the"
+print "option to restart a game to pick up"
+print "where you left off."
+vtab 22: htab 8: inverse : print "press any key to continue";: normal 
+get a$
+return 
+
+_ShowMenu
+home : print  tab( 13);"main selection": for x = 1 to 40: print "-";: next 
+print : print "    1) create new character"
+print : print "    2) restart old adventure"
+print : print "    3) quit"
+
+_GetMenuSelection
+vtab 15: input "please enter your selection (1,2,or 3)";a
+if a < 0 or a > 3 then gosub @bell : print "please answer 1, 2, or 3 only": goto @GetMenuSelection
+if a = 1 then  gosub @CreateCharacter: goto @BeginAdventure
+if a = 2 goto @LoadGame
+
+
+_AskAreYouSure
+if a = 3 then  print "are you sure (y/n)";: get a$: if a$ <  > "y" and a$ <  > "n" then  goto @AskAreYouSure
+if a$ = "y" then end 
+goto @ShowMenu
+
+_LoadGame
+print "": print  chr$ (4);"open savegame"
+print  chr$ (4);"read savegame"
+input st: input co: input dex: input hp: input rm
+for x = 1 to 15: input mp(x): input mr(x): next : for x = 1 to 6: input flag(x): next : for x = 1 to 13: input it(x): next 
+print  chr$ (4);"close savegame"
+print  chr$ (4);"delete savegame
+goto @PrintRoomDescription
+
+
+_bell
+print chr$(7)
+return
+
+REM End

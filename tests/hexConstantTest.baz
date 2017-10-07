@@ -1,0 +1,4 @@
+float a
+a = $cf00
+print "$CF00 is "; a
+end

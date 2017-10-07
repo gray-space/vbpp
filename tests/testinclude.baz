@@ -1,0 +1,3 @@
+REM Included from testinclude.baz
+print "Hello! I'm included!" // It came from within the included file!
+

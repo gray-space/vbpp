@@ -1,0 +1,11 @@
+float x
+x = 10
+assert x < 20
+print "Looks like X is less than 20"
+
+assert x <> 3
+print "Looks like x is not equal to 3"
+
+assert x <> 10
+print "Assertion should have failed"
+

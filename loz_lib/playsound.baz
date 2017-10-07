@@ -1,0 +1,10 @@
+£playsound
+	poke 0,255 - ph: rem pitch
+	poke 1,lh: rem note length
+	call 771: rem play the note
+return 
+£initsound
+	poke 771,173: poke 772,48: poke 773,192: poke 774,136: poke 775,208: poke 776,4: poke 777,198
+	poke 778,1: poke 779,240: poke 780,8: poke 781,202: poke 782,208: poke 783,246: poke 784,166
+	poke 785,0: poke 786,76: poke 787,3: poke 788,3: poke 789,96
+return 

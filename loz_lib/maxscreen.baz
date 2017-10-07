@@ -1,0 +1,3 @@
+rem * width max, height max for screen (279, 191, 159)
+mw%{widthMax}= 279:mh%{HeightMax}= 191
+if peek(33){mode 80 cols} = 80 then mh%{HeightMax}= 159 

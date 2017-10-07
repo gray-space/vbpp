@@ -1,0 +1,61 @@
+#include ErrorDefs.baz
+
+GOSUB @readfile
+end
+
+
+_readfile
+TRY
+    input "File to read:";a$
+    print d$;"open ";a$
+    input a,b,c
+    print d$;"close ";a$
+    PRINT "Read file!"
+CATCH ERR_FILE_NOT_FOUND, ERR_FILE_LOCKED
+    print "Cannot find file ";a$
+    goto @readfile
+CATCH ERR_IO_ERROR
+    print "Disk I/O Error! Giving up..."
+    RETURN
+CATCH ERR_ALL
+    print "unexpected error!"
+    STOP
+ENDTRY
+// Successful executeion falls through to here
+
+RETURN
+
+
+// float vbppErrStackPtr
+// float
+//
+//
+// #DEFINE MAXTRYDEPTH 5
+// DIM vbppOnErrFlags(MAXTRYDEPTH): DIM vbppCURLSV(MAXTRYDEPTH); DIM
+//
+// _readfile
+//    vbintStackPin = PEEK(248) : ONERR GOTO @TRY_1_CATCH
+//
+//    input "File to read";a$
+//    print d$;"open ";a$
+//    input a,b,c
+//    print d$;"close ";a$
+//    GOTO TRY_1_ENDTRY
+//_TRY_1_CATCH
+//    IF
+//    POKE 216,0 : vbIntErrCode = PEEK(222) : POKE 223,vbintStackPin : CALL -3288
+//    ON 2 - (vbIntErrCode = FILE_NOT_FOUND OR vbIntErrCode = FILE_LOCKED) GOTO @TRY_1_CATCHHANDLE_1, @TRY_1_TEST_2
+//_TRY_1_CATCHHANDLE_1
+//    print "Cannot find file ";a$
+//    goto _readile
+//    goto @TRY_1_ENDTRY
+//_TRY_1_TEST_2
+//    on 2 - (vbIntErrCode = IO_ERROR) GOTO @TRY_1_CATCHHANDLE_2, @TRY_1_TEST_3
+//_TRY_1_CATCHHANDLE_2
+
+
+
+//ONERR:
+//    1 If there was a previous onerr target restore it
+//      else, disable onerr
+//    2 Go through catch statements.

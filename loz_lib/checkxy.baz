@@ -1,0 +1,13 @@
+£checkxy
+	rem * check x,y to prevent overflow
+	x1= int(x1):x2= int(x2):y1= int(y1):y2= int(y2)
+	if x1 >= 1 and x1 < mw% and x2 >= 1 and x2 < mw% and y1 >= 1 and y1 < mh% and y2 >= 1 and y2 < mh% then return
+	if x1 > mw%{widthMax} then x1= mw%{widthMax}
+	if x2 > mw%{widthMax} then x2= mw%{widthMax}
+	if y1 > mh%{HeightMax} then y1= mh%{HeightMax}
+	if y2 > mh%{HeightMax} then y2= mh%{HeightMax}
+	if x1 < 1 then x1= 1
+	if x2 < 1 then x2= 1
+	if y1 < 1 then y1= 1
+	if y2 < 1 then y2= 1
+return

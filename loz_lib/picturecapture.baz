@@ -1,0 +1,9 @@
+£picturecapture
+	rem * to capture screen type "s"
+	fi%= fn alea(10000):fi$= "fic"+str$(fi%):print d$;"create cap/";fi$;",tbin"
+	rem * hgr screen
+	if (mh%{HeightMax} < 160) then fi$= fi$ + ",a$2000,l$1ff8"
+	rem * hgr2
+	if (mh%{HeightMax} > 159) then fi$= fi$ + ",a$4000,l$1ff8"
+	print d$;"bsave cap/";fi$
+return
