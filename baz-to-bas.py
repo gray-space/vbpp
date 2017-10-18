@@ -94,8 +94,8 @@ f.close()
 # messages += "\nFile created: " + myfile
 
 # record errors
-gotosKeys = bas.gotos.keys()
-gotosKeys.sort
+# gotosKeys = bas.gotos.keys()
+# gotosKeys.sort
 # callsResult = "Goto, Gosub not found:\n"
 
 # Follwing is broken.

@@ -1,0 +1,10 @@
+// A bug is causing vbpp to incorrectly handle standalone post operations (i.e. ++)
+// on standalone array refernces.
+
+float froob(100) : REM float froob(100)
+float a
+
+a++
+
+froob(1)++
+print "It worked! froob(1) is: ";froob(1)

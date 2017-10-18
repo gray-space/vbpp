@@ -23,6 +23,8 @@ TEST_SOURCES = tests/test.baz tests/functest.baz tests/longiftest.baz \
 TEST_OBJECTS = $(TEST_SOURCES:.baz=.bas)
 TEST_BINS = $(TEST_OBJECTS:.bas=.bin)
 
+.PRECIOUS: %.bas
+
 %.bas:  %.baz 
 	python baz-to-bas.py  --outfile $@ $<
 

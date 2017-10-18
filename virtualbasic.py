@@ -39,7 +39,7 @@ import re
 import json
 from time import gmtime, strftime
 import sys
-from switch import Switch as switch
+import switch
 import logging
 
 
@@ -124,8 +124,14 @@ def convert_lines(file_name, lines):
 class VirtualBasicCode:
     """class VirtualBasicCode version 0.1.5"""
 
-    def __init__(self, li=[], args=[], naScript="none"):
+    def __init__(self, li=None, args=None, na_script="none"):
+        # PyCharm complains that li and args are mustable if we have the default be []. sowe have to do this
+        # logic instead...
+        if not li:
+            li = []
         self.lines = li
+        if not args:
+            args = []
         self.arguments = args
         self.step = 10
         self.incr = 10
@@ -137,7 +143,7 @@ class VirtualBasicCode:
         self.otherInsert = 0
         self.root = ""
         # self.msg = "\n"
-        self.scriptName = naScript
+        self.scriptName = na_script
         self.defines = {}
         self.havePreDefs = False
         self.predefvars = {}
@@ -152,8 +158,7 @@ class VirtualBasicCode:
             (r"^\s*[0-9]+", lambda scanner, token: ("LINENUM", token)),
             (r"[0-9]+", lambda scanner, token: ("INTLITERAL", token)),
             (r"_[a-zA-Z_][a-zA-Z_0-9\-]*", lambda scanner, token: ("LINELABELDEF", token)),
-            (
-                r"@[a-zA-Z_][a-zA-Z_0-9\-]*\(", lambda scanner, token: ("FUNCTIONCALL", token)),
+            (r"@[a-zA-Z_][a-zA-Z_0-9\-]*\(", lambda scanner, token: ("FUNCTIONCALL", token)),
             (r"@[a-zA-Z_][a-zA-Z_0-9\-]*", lambda scanner, token: ("LINELABELREF", token)),
             (r"\+\+|\-\-", lambda scanner, token: ("POSTOP", token)),
             (r"\+\=", lambda scanner, token: ("PLUSEQUALS", token)),
@@ -231,10 +236,9 @@ class VirtualBasicCode:
             (r"\bDEFAULT\b", lambda scanner, token: ("DEFAULT", token)),
             (r"\bENDSWITCH\b", lambda scanner, token: ("ENDSWITCH", token)),
             (r"\;", lambda scanner, token: ("CONCAT", token)),
-            (
-                r"\bPEEK\b|\bFN\b|\bSPC\b|\bSGN\b|\bINT\b|\bABS\b|\bUSR\b|\bFRE\b|\bSCRN\b|\bPDL\b|\bPOS\b|\bSQR\b|\bRND\b|\bLOG\b",
-                lambda scanner, token: ("STDFUNC", token)),
-            (r"\MID\$|\bCHR\$",
+            (r"\bPEEK\b|\bFN\b|\bSPC\b|\bSGN\b|\bINT\b|\bABS\b|\bUSR\b|\bFRE\b|\bSCRN\b|\bPDL\b|\bPOS\b|\bSQR\b"
+             r"|\bRND\b|\bLOG\b", lambda scanner, token: ("STDFUNC", token)),
+            (r"\bMID\$|\bCHR\$",
              lambda scanner, token: ("STDFUNC", token)),
             (r"[a-zA-Z_][a-zA-Z_0-9]*\$\(",
              lambda scanner, token: ("STRINGARRAY", token)),
@@ -248,7 +252,7 @@ class VirtualBasicCode:
             (r"[a-zA-Z_][a-zA-Z_0-9]*", lambda scanner, token: ("IDENTIFIER", token)),
             (r"[,]+", lambda scanner, token: ("PUNCTUATION", token)),
             (r"\n", lambda scanner, token: ("EOL", token)),
-            (r"[\ \t]+", lambda scanner, token: ("WHITESPACE", token)),
+            (r"[\ \t]+", lambda scanner, token: ("WHITESPACE", token))
         ], flags=re.IGNORECASE)
         self.idTokens = ["INTVAR", "IDENTIFIER", "STRINGVAR"]  # Different types of variable identifiers
         self.varDecTokens = ["INTDEC", "FLOATDEC", "STRINGDEC"]  # Which tokens declare variables
@@ -537,7 +541,7 @@ class VirtualBasicCode:
                 result.append(line)
         self.lines = result
 
-    # Probably should get rid of this... easier to do when the code is tokenized.
+    # FIXME: Probably should get rid of this... easier to do when the code is tokenized.
     def delete_spaces(self):
         """delete all useless spaces"""
         # result = []
@@ -1013,25 +1017,28 @@ class VirtualBasicCode:
 
         # Must get either a variable ref or a right paren
         if tokens[index].tokenID not in ("INTVAR", "IDENTIFIER", "STRINGVAR", "RPAREN"):
-            # Nothing found.
-            logger.warning("File {0} line {1}: Found non-variable ({3}) when expecting variable reference.".format(
-                tokens[index].fileName, tokens[index].lineNum, tokens[index].tokenText))
+            # Found something other than a variable or array reference.
+            logger.warning("File {0} line {1}: Found non-variable ({3}) when expecting variable or "
+                           "array reference.".format(tokens[index].fileName, tokens[index].lineNum,
+                                                     tokens[index].tokenText))
             return None, 0
         if tokens[index].tokenID == "RPAREN":
-            # Need to see if the paren represents an array reference or not.
-            # Need to get the full array ref
-            (array_ref, newindex) = self.find_matching_paren_or_array_ref_left(tokens, index - 1)
+            # Must be start of an array reference. Get the rest of it.
+            (array_ref, newindex) = self.find_array_ref_left(tokens, index - 1)
             array_ref.append(tokens[index])
             # print("returning array ref: " + self.pp.pformat(array_ref))
-            return array_ref, newindex
+            return array_ref, newindex - 1  # Subtract 1 because find_array_ref_left returns index of the array ref
+
+
         else:
             # Just return the variable ref
             # print("returning variable ref: " + self.pp.pformat([tokens[index]]) + ' index: ' + str(index - 1))
             return [tokens[index]], index - 1
 
-    def find_matching_paren_or_array_ref_left(self, tokens, index):
+    def find_array_ref_left(self, tokens, index):
         """
-        Return array ref or exit with error if we find matching left paren.
+        Look for an array reference, startinf at the left end of the token list.
+        Exit with error if we find matching left paren.
         :param tokens: Tokens to search for the paren
         :param index: Where in the token list to start searching
         :return: The array ref and the index of the matching paren. Not finding the array def causes a fatal error.
@@ -1043,16 +1050,19 @@ class VirtualBasicCode:
         # Go backwards until we reach an array ref or left paren that matched the one at the end of the
         while index > 0:
             if tokens[index].tokenID in self.arrayRefs and r_paren_count == 0:
-                # Found an array ref.
+                # Found a token that starts an array reference. And we're not in a nested reference.
                 array_ref.insert(0, tokens[index])
                 return array_ref, index
             elif tokens[index].tokenID in self.arrayRefs:
+                # Found a token that starts an array reference, but it's nested within parens. Keep going.
                 r_paren_count -= 1  # Array ref closes out a nested right paren
             elif tokens[index].tokenID == 'LPAREN':
                 if r_paren_count == 0:
-                    # The right paren matches a bare left paren. Error
-                    logger.error("file {0} line {1} : Post increment/decrement on parenthetical expression.".format(
-                        tokens[index].filename, tokens[index].lineNum))
+                    # We reached a "(" that matches the rightmost ")" of what should be an array reference, but
+                    # it's not an array reference, just a paren. That's an error.
+                    logger.error("file {0} line {1} : Post increment/decrement on parenthetical expression. "
+                                 "Is there a space between the array name and the '('?".format(tokens[index].filename,
+                                                                                               tokens[index].lineNum))
                     exit(1)
                 else:
                     r_paren_count -= 1  # Closed paren
@@ -1094,22 +1104,19 @@ class VirtualBasicCode:
                     new_code.append(TokenObj(token.filename, token.lineNum, "OPERATOR", operator))
             elif token.tokenID == "POSTOP":
                 inc_var, prev_token = self.get_left_var_ref(new_code)
-                # Error out if postop didn't occur afer a varaible ref.
-                # TODO: Extend this to array reference
-
+                # Error out if postop didn't occur after a variable ref.
                 if not inc_var:
                     logger.error(
-                        "Error: Filename: {0} line #{1} : operator {2} used with non variable or array {3}".format(
-                            token.fileName, token.lineNum, token.tokenText))
+                        "Error: Filename: {0} line #{1} : operator {2} used with non variable or array"
+                        ".".format(token.fileName, token.lineNum, token.tokenText))
                     exit(1)
 
                 # Look ahead and behind to determine if this is a standalone reference. If so, we will just put the
                 # increment statement here.
                 next_token = self.get_nth_right_nonspace_token_obj(self.tokens, 1)
                 (second_left_token, prev_token) = self.get_nth_left_nonspace_token_obj(new_code, prev_token, 1)
-                if next_token.tokenID in (
-                        "STATEMENTSEP", "EOL") and second_left_token is not None and second_left_token.tokenID in [
-                    "STATEMENTSEP", "EOL"]:
+                if next_token.tokenID in ["STATEMENTSEP", "EOL"] and second_left_token is not None \
+                        and second_left_token.tokenID in ["STATEMENTSEP", "EOL"]:
                     # Yes, so let's do the increment in place here.
                     new_code.append(TokenObj(token.filename, token.lineNum, "EQUATE", "="))
                     new_code += inc_var
@@ -1176,7 +1183,7 @@ class VirtualBasicCode:
         local_var_list = {}  # Hold list of variables defined in the function
         while len(self.tokens) > 0:
             token = self.tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 # Handle function definition token
                 if case('FUNCDEC'):
                     local_var_list = {}  # Clear list of local vars
@@ -1241,7 +1248,7 @@ class VirtualBasicCode:
                         this_func.paramType.append(next_token.tokenID)
                         this_func.totalParamCount += 1
                         # Increment the count of appropriate param type.
-                        for case in switch(next_token.tokenID):
+                        for case in switch.Switch(next_token.tokenID):
                             if case('INTDEC'):
                                 this_func.intParams += 1
                                 have_int_param = True
@@ -1286,7 +1293,7 @@ class VirtualBasicCode:
                     int_param_seen = 0
                     string_param_seen = 0
                     for i in range(this_func.totalParamCount):
-                        for case in switch(this_func.paramType[i]):
+                        for case in switch.Switch(this_func.paramType[i]):
                             if case('FLOATDEC'):
                                 # Come up with replacement text for this param in the
                                 # function
@@ -1366,7 +1373,7 @@ class VirtualBasicCode:
 
                         self.discard_leading_whitespace(self.tokens)
                         # retVal = self.get_remainder_of_statement_or_line(self.tokens)
-                        for case in switch(this_func.retType):
+                        for case in switch.Switch(this_func.retType):
                             if case("INTDEC"):
                                 retVar = "riReturnIntValue"
                                 have_int_return = True
@@ -1497,7 +1504,8 @@ class VirtualBasicCode:
                                                    tokens[index - 1].lineNum, statement)
         return True
 
-    def get_remainder_of_statement_or_line(self, tokens):
+    @staticmethod
+    def get_remainder_of_statement_or_line(tokens):
         """ Pop everything from list until either EOF or statement separator. Effectively
             this pops everything from the statement that starts the token list.
         :param tokens: The list of tokens to pop. As a side effect, this list will start
@@ -1520,48 +1528,48 @@ class VirtualBasicCode:
         :param string_return: max depth of the sting return array
         :return: a list of tokens for the VB++ code to declare the arrays.
         """
-        prefixCode = ""
+        prefix_code = ""
         if int_param:
-            maxIntParams = 25
+            max_int_params = 25
             if 'MAXINTPARAMS' in self.defines:
-                maxIntParams = self.defines['MAXINTPARAMS']
-            prefixCode += "integer siIntParam(" + str(maxIntParams) + ")\n"
-            prefixCode += "float siIntParamPointer\n"
+                max_int_params = self.defines['MAXINTPARAMS']
+            prefix_code += "integer siIntParam(" + str(max_int_params) + ")\n"
+            prefix_code += "float siIntParamPointer\n"
         if float_param:
-            maxFloatParams = 25
+            max_float_params = 25
             if 'MAXFLOATPARAMS' in self.defines:
-                maxFloatParams = self.defines['MAXFLOATPARAMS']
-            prefixCode += "float sfFloatParam(" + str(maxFloatParams) + ")\n"
-            prefixCode += "float sfFloatParamPointer\n"
+                max_float_params = self.defines['MAXFLOATPARAMS']
+            prefix_code += "float sfFloatParam(" + str(max_float_params) + ")\n"
+            prefix_code += "float sfFloatParamPointer\n"
         if string_param:
-            maxStringParams = 25
+            max_string_params = 25
             if 'MAXSTRINGPARAMS' in self.defines:
-                maxStringParams = self.defines['MAXSTRINGPARAMS']
-            prefixCode += "string ssStringParam(" + str(maxStringParams) + ")\n"
-            prefixCode += "float ssStringParamPointer\n"
+                max_string_params = self.defines['MAXSTRINGPARAMS']
+            prefix_code += "string ssStringParam(" + str(max_string_params) + ")\n"
+            prefix_code += "float ssStringParamPointer\n"
         if int_return:
-            prefixCode += 'integer riReturnIntValue\n'
-            maxIntReturns = 5
+            prefix_code += 'integer riReturnIntValue\n'
+            max_int_returns = 5
             if 'MAXINTRETURNS' in self.defines:
-                maxIntReturns = self.defines['MAXINTRETURNS']
-            prefixCode += "integer ihReturnIntHeap(" + str(maxIntReturns) + ")\n"
+                max_int_returns = self.defines['MAXINTRETURNS']
+            prefix_code += "integer ihReturnIntHeap(" + str(max_int_returns) + ")\n"
         if float_return:
-            prefixCode += 'float rfReturnFloatValue\n'
-            maxFloatReturns = 5
+            prefix_code += 'float rfReturnFloatValue\n'
+            max_float_returns = 5
             if 'MAXFLOATRETURNS' in self.defines:
-                maxFloatReturns = self.defines['MAXFLOATRETURNS']
-            prefixCode += "float fhReturnFloatHeap(" + str(maxFloatReturns) + ")\n"
+                max_float_returns = self.defines['MAXFLOATRETURNS']
+            prefix_code += "float fhReturnFloatHeap(" + str(max_float_returns) + ")\n"
         if string_return:
-            prefixCode += 'string rsReturnStringValue\n'
-            maxStringReturns = 5
+            prefix_code += 'string rsReturnStringValue\n'
+            max_string_returns = 5
             if 'MAXSTRINGRETURNS' in self.defines:
-                maxStringReturns = self.defines['MAXSTRINGRETURNS']
-            prefixCode += "string shReturnStringHeap(" + str(maxStringReturns) + ")\n"
+                max_string_returns = self.defines['MAXSTRINGRETURNS']
+            prefix_code += "string shReturnStringHeap(" + str(max_string_returns) + ")\n"
         # tokenize the autogenerated code
-        if prefixCode != "":
-            prefixCode = "REM autogenerated array definitions for function parameters\n" + prefixCode
-        prefixTokens = self.tokenize_string("VirtualBasic++ Generated", 0, prefixCode)
-        return prefixTokens
+        if prefix_code != "":
+            prefix_code = "REM autogenerated array definitions for function parameters\n" + prefix_code
+        prefix_tokens = self.tokenize_string("VirtualBasic++ Generated", 0, prefix_code)
+        return prefix_tokens
 
     def replace_function_calls(self):
         """Replace the @name(param1, param2, ...) with marshalling code
@@ -1649,7 +1657,7 @@ class VirtualBasicCode:
             # Need to see if we have to save off the return value into an array.
             # this has to happen when we have multiple function calls in the
             # statement that return the same data type.
-            for case in switch(my_func.retType):
+            for case in switch.Switch(my_func.retType):
                 if case("INTDEC"):
                     if int_rets > 1:
                         # Yup. Multiple integer return vars. Need to save off the
@@ -1760,7 +1768,7 @@ class VirtualBasicCode:
                     logger.error("Error in file {0} starting on line {1}: Call to undefined function '{2}'.".format(
                         tokens[index].filename, tokens[index].lineNum, func_name))
                     exit(1)
-                for case in switch(self.funcDefs[func_name].retType):
+                for case in switch.Switch(self.funcDefs[func_name].retType):
                     if case("INTDEC"):
                         int_count += 1
                         break
@@ -1810,7 +1818,7 @@ class VirtualBasicCode:
                 exit(1)
 
             token = tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 if case("RPAREN"):
                     if nested_parens == 0:
                         # Done with everything
@@ -2125,7 +2133,7 @@ class VirtualBasicCode:
                     logger.debug(
                         "Error: undeclared variable {0} already defined in pre-defined variable file {1} (".format(
                             variable,
-                            ))
+                        ))
                     exit(1)
             reserved_vars[trunc_var] = var_type
         return reserved_vars
@@ -2163,8 +2171,8 @@ class VirtualBasicCode:
         varcount = 1
         assigned_vars = {}
         for variable in self.decVarList:
-            # See if we already have a Applesft name for this var
-            if self.decVarList[variable].has_key('asoftvar'):
+            # See if we already have a Applesoft name for this var
+            if 'asoftvar' in self.decVarList[variable]:
                 # It does. Skip it
                 continue
 
@@ -2205,7 +2213,7 @@ class VirtualBasicCode:
                 self.reservedVars[varname] = vartype
 
                 # Add type identifiers if necessary
-                for case in switch(vartype):
+                for case in switch.Switch(vartype):
                     if case('INTDECARRAY'): pass
                     if case('INTDEC'):
                         varname += '%'
@@ -2329,7 +2337,7 @@ class VirtualBasicCode:
 
         while len(self.tokens):
             token = self.tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 if case('LONGIF'):
                     # Set up the long if
                     if_counter += 1
@@ -2530,7 +2538,7 @@ class VirtualBasicCode:
 
         while len(self.tokens) > 0:
             token = self.tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 if case('WHILE'):
                     # Handle while by setting up label and if then test
                     while_count += 1
@@ -2666,7 +2674,7 @@ class VirtualBasicCode:
         # Loop through all tokens, looking for try-catch related keywords
         while len(self.tokens) > 0:
             token = self.tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 if case('TRY'):
                     # We have started a try block.
                     if in_try:
@@ -2917,7 +2925,7 @@ class VirtualBasicCode:
 
         while len(self.tokens):
             token = self.tokens.pop(0)
-            for case in switch(token.tokenID):
+            for case in switch.Switch(token.tokenID):
                 if case('SWITCH'):
                     in_switch = True
                     have_default = False
@@ -3108,8 +3116,8 @@ class Basic(VirtualBasicCode):
     print code.basic()
     print code.msg"""
 
-    def __init__(self, li=[], args=[], naScript="none"):
-        VirtualBasicCode.__init__(self, li, args, naScript)
+    def __init__(self, li=[], args=[], na_script="none"):
+        VirtualBasicCode.__init__(self, li, args, na_script)
 
     def basic(self):
         """convert into applesoft basic"""
