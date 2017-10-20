@@ -1,4 +1,4 @@
-VirtualBasic - INFO - Sat Oct  7 14:44:00 2017 Compiling tests/example.baz
+VirtualBasic - INFO - Sun Oct 15 14:50:21 2017 Compiling tests/example.baz
 VirtualBasic - WARNING - File example Line 3: use of undeclared variable s$.
 VirtualBasic - WARNING - File example Line 4: use of undeclared variable he$.
 VirtualBasic - WARNING - File example Line 6: use of undeclared variable lo.

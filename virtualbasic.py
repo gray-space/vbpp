@@ -135,7 +135,7 @@ class VirtualBasicCode:
         self.arguments = args
         self.step = 10
         self.incr = 10
-        self.mode = "local"
+        self.mode = "local"  # FIXME: we don't support doing this online anymore.
         self.gotos = {}
         self.appels = {}
         self.reservedNumberedLines = []
@@ -144,10 +144,10 @@ class VirtualBasicCode:
         self.root = ""
         # self.msg = "\n"
         self.scriptName = na_script
-        self.defines = {}
-        self.havePreDefs = False
-        self.predefvars = {}
-        self.predefaplvarsnames = []
+        self.defines = {}  # Dictionary that holds everything created through #define preprocessor
+        self.havePreDefs = False  # Flag indicating whether we have a pre-defined variable file.
+        self.predefvars = {}  # Dictionary containing pre-defined variables
+        self.predefaplvarsnames = []  # A list of applesoft variables that have been pre-defined.
         self.tokens = []
         # Regular expression scanner to tokenize the VirtualBasoc++ source. Used
         # by the tokenizer routine. Uses the undocumeted Scanner class in the
@@ -275,7 +275,7 @@ class VirtualBasicCode:
     def delete_lines_with_hashes(self):
         """delete lines beginning with hash char"""
         result = []
-        line_with_hash = re.compile("^\s*\#")
+        line_with_hash = re.compile("^\s*#")
         for line in self.lines:
             if not line_with_hash.search(line.code):
                 result.append(line)
@@ -286,7 +286,7 @@ class VirtualBasicCode:
         """delete lines beginning with hash char"""
         result = []
         line_slash_comment = re.compile("^\s*//.*")
-        line_ends_with_slash_comment = re.compile("^(.*?)(\/\/.*)$")
+        line_ends_with_slash_comment = re.compile("^(.*?)(//.*)$")
         for line in self.lines:
             # See if entire line is a // comment
             if not line_slash_comment.search(line.code):
@@ -303,7 +303,7 @@ class VirtualBasicCode:
     def delete_slashes(self):
         """replace char with slashes"""
         for line in self.lines:
-            line = re.sub(r'\\.*$', "\n", line)
+            re.sub(r'\\.*$', "\n", line)
 
     def delete_lines_with_rem(self):
         """delete lines beginning with rem"""
@@ -319,7 +319,7 @@ class VirtualBasicCode:
          Why do we even do this? It's messing things up.
         """
         # result = []
-        hashes = re.compile("[^pr\\\]\#.*")
+        hashes = re.compile("[^pr\\\]#.*")
         for line in self.lines:
             line.code = hashes.sub("", line.code)
             # result.append(line)
@@ -330,7 +330,7 @@ class VirtualBasicCode:
         logger = logging.getLogger("VirtualBasic.insert_files")
         self.otherInsert = 0
         result = []
-        insert_file = re.compile("#include ([a-zA-Z0-9\/\-\_]+\.baz)")
+        insert_file = re.compile("#include ([a-zA-Z0-9/\-_]+\.baz)")
         # lineWithHash = re.compile("^\s*\#")
         for line in self.lines:
             if insert_file.search(line.code):
@@ -341,9 +341,8 @@ class VirtualBasicCode:
                     code = f.readlines()
                     f.close()
                     result += convert_lines(m.group(1), code)
-                except:
-                    logger.error("Cannot find included file {0}".format(fichier))
-                    # self.msg += "! Warning can't insert file  " +  + " ! \n"
+                except Exception as e:
+                    logger.error("Cannot find included file {0}: {1}".format(fichier, str(e)))
             else:
                 result.append(line)
 
@@ -357,7 +356,7 @@ class VirtualBasicCode:
         """delete inserts"""
         # result = []
         logger = logging.getLogger("VirtualBasic.delete_inserts")
-        insert_file = re.compile("#include ([a-zA-Z0-9\/\-\_]+\.baz)")
+        insert_file = re.compile("#include ([a-zA-Z0-9/\-_]+\.baz)")
         for line in self.lines:
             if insert_file.search(line.code):
                 m = insert_file.search(line.code)
@@ -377,12 +376,11 @@ class VirtualBasicCode:
         close_section = re.compile("^[\s]*closesection", re.I)
         # tabOrSpace = re.compile("^[\t\s]*")
         for line in self.lines:
-            if not (
-                                empty_line.search(line.code)
-                            or begin_section.search(line.code)
-                        or end_section.search(line.code)
+            if not (empty_line.search(line.code)
+                    or begin_section.search(line.code)
+                    or end_section.search(line.code)
                     or close_section.search(line.code)
-            ):
+                    ):
                 # line = tabOrSpace.sub("",line) # take line and erase blank lines
                 result.append(line)
         self.lines = result
@@ -397,7 +395,7 @@ class VirtualBasicCode:
         self.lines = result
 
     def reserves_numbers(self):
-        "reserves lines with numbers"
+        """reserves lines with numbers"""
         result = []
         numbered_lines = re.compile("^([0-9]+)")
         for line in self.lines:
@@ -455,7 +453,7 @@ class VirtualBasicCode:
         """find and replace goto, gosub"""
         logger = logging.getLogger("VirtualBasic.replace_calls")
         result = []
-        goto_sub_call = re.compile("@([a-zA-Z_][a-zA-Z_0-9\-_]*)")
+        goto_sub_call = re.compile("@([a-zA-Z_][a-zA-Z0-9\-_]*)")
         # gotosubCallAll = re.compile("[^\\\]@([a-zA-Z_][a-zA-Z_0-9\-_]*)?")
         for line in self.lines:
             # Repeatly search for line label references
@@ -463,7 +461,7 @@ class VirtualBasicCode:
                 # Split string around the matching line label
                 before, ref, after = goto_sub_call.split(line.code, 1)
                 replace = "???"
-                if self.gotos.has_key(ref.upper()):
+                if ref.upper() in self.gotos:
                     # matches a known line number. Set is as the replacement
                     replace = self.gotos[ref.upper()]
                 else:
@@ -493,8 +491,7 @@ class VirtualBasicCode:
                 my_key = eval(m.group(1))
                 # lines_code[my_key] = m.group(2)
                 lines_code[my_key] = line
-        keys_sorted = lines_code.keys()
-        keys_sorted.sort()
+        keys_sorted = sorted(lines_code.keys())
         for my_key in keys_sorted:
             # lineNumber = str(my_key)
             result.append(lines_code[my_key])
@@ -506,7 +503,7 @@ class VirtualBasicCode:
     def delete_parenthesis_comments(self):
         """delete parenthesis comments"""
         # result = []
-        parenthesis_comment = re.compile("\{.+?\}")
+        parenthesis_comment = re.compile("{.+?\}")
         for line in self.lines:
             line.code = parenthesis_comment.sub("", line.code)
             # result.append(line)
@@ -628,7 +625,6 @@ class VirtualBasicCode:
         # pp = pprint.PrettyPrinter(indent=4)
         # pp.pprint(self.defines)
 
-
         # For the next part, we need to tokenize the source
         self.tokens = self.tokenize(self.lines)
 
@@ -638,7 +634,7 @@ class VirtualBasicCode:
         # print("Initial tokens:")
         # self.dump_tokens(self.tokens)
         self.handle_switch_statements()
-        self.findFunctionDefs()
+        self.find_function_defs()
         # print("After findFunctionDefs:")
         # self.print_token_stream(self.tokens)
         self.replace_function_calls()
@@ -679,7 +675,7 @@ class VirtualBasicCode:
 
         # Conditional arguments and others.
         # self.handleSimpleElse()
-        self.handleLongIfs()
+        self.handle_long_ifs()
 
         self.handle_asserts()
         self.remove_empty_lines_and_statements()
@@ -786,7 +782,8 @@ class VirtualBasicCode:
                definition. The intent is to replace variable names, words, etc. Using it to
                try to replace a substring won't work.
         """
-        # Cribbed from http://stackoverflow.com/questions/2400504/easiest-way-to-replace-a-string-using-a-dictionary-of-replacements
+        # Cribbed from
+        # http://stackoverflow.com/questions/2400504/easiest-way-to-replace-a-string-using-a-dictionary-of-replacements
         pattern = re.compile(r'\b(' + '|'.join(self.defines.keys()) + r')\b')
 
         for line in self.lines:
@@ -807,8 +804,8 @@ class VirtualBasicCode:
             if matched:
                 # test for do not skip case
                 if matched.group(1) == '#ifdef' and matched.group(2) \
-                        in self.defines or matched.group(1) == '#ifndef' and \
-                                matched.group(2) not in self.defines:
+                        in self.defines or matched.group(1) == '#ifndef' \
+                        and matched.group(2) not in self.defines:
                     # All we need to do here is push the current skipping state
                     # onto stack. Either we have a state below us that
                     # requires skipping, or we don't. This state will never
@@ -851,7 +848,7 @@ class VirtualBasicCode:
         for line in lines:
             linetok, remainder = self.tokenizer.scan(line.code)
             # self.tokens = results
-            if not remainder is None and remainder != "":
+            if remainder is not None and remainder != "":
                 # Uh oh... something didn't tokenize
                 logger.error("Syntax error in file {1} at line {0}:\n{3}\n Could not parse \"{2}\".".format(
                     line.lineNum, line.filename, remainder, line))
@@ -870,11 +867,11 @@ class VirtualBasicCode:
         return tokens
 
     #
-    def tokenize_string(self, fileName, lineNum, code):
+    def tokenize_string(self, file_name, line_num, code):
         """
         Tokenize a string rather than a set of line objects
-        :param fileName: The filename the source code came from
-        :param lineNum: The original line number of the source code
+        :param file_name: The filename the source code came from
+        :param line_num: The original line number of the source code
         :param code:  The string of code to be tokenized
         :return: A list of token objects
         """
@@ -885,7 +882,7 @@ class VirtualBasicCode:
         if remainder is not None and remainder != "":
             # Uh oh... something didn't tokenize
             logger.error(
-                "Syntax error in file {1} at line #{0}:\n{2}\nError at code \"{3}\".".format(fileName, code, lineNum,
+                "Syntax error in file {1} at line #{0}:\n{2}\nError at code \"{3}\".".format(file_name, code, line_num,
                                                                                              code))
             token_count = 0
             logger.error("Parsed tokens on this line")
@@ -895,10 +892,11 @@ class VirtualBasicCode:
         for newtoken in token_tuples:
             # Append new topken objects based on token tuples from RE tokenizer
             # Add info from this line of code
-            tokens.append(TokenObj(fileName, lineNum, newtoken[0], newtoken[1]))
+            tokens.append(TokenObj(file_name, line_num, newtoken[0], newtoken[1]))
         return tokens
 
-    def de_tokenize(self, tokens):
+    @staticmethod
+    def de_tokenize(tokens):
         """
          Convert tokens back into program text
         :param tokens: List of tokens to be converted
@@ -936,7 +934,8 @@ class VirtualBasicCode:
         return lines
 
     #
-    def get_nth_left_nonspace_token_obj(self, tokens, index, n):
+    @staticmethod
+    def get_nth_left_nonspace_token_obj(tokens, index, n):
         """
         Grab the nth non-space token to the left of a point
         in a list of tokens
@@ -967,7 +966,7 @@ class VirtualBasicCode:
                 token_count += 1
                 if token_count < n:
                     index -= 1
-        return (tokens[index], index)
+        return tokens[index], index
 
     @staticmethod
     def get_nth_right_nonspace_token_obj(tokens, n):
@@ -1018,7 +1017,7 @@ class VirtualBasicCode:
         # Must get either a variable ref or a right paren
         if tokens[index].tokenID not in ("INTVAR", "IDENTIFIER", "STRINGVAR", "RPAREN"):
             # Found something other than a variable or array reference.
-            logger.warning("File {0} line {1}: Found non-variable ({3}) when expecting variable or "
+            logger.warning("File {0} line {1}: Found non-variable ({2}) when expecting variable or "
                            "array reference.".format(tokens[index].fileName, tokens[index].lineNum,
                                                      tokens[index].tokenText))
             return None, 0
@@ -1028,7 +1027,6 @@ class VirtualBasicCode:
             array_ref.append(tokens[index])
             # print("returning array ref: " + self.pp.pformat(array_ref))
             return array_ref, newindex - 1  # Subtract 1 because find_array_ref_left returns index of the array ref
-
 
         else:
             # Just return the variable ref
@@ -1158,7 +1156,7 @@ class VirtualBasicCode:
             tokens.pop(0)
 
     # Locate function definitions
-    def findFunctionDefs(self):
+    def find_function_defs(self):
         """
         Collect function definitions.
         Function declarations look like:
@@ -1190,8 +1188,8 @@ class VirtualBasicCode:
                     if in_function:
                         # Buh... already in a function definition. No nesting allowed!
                         logger.error(
-                            "Error in file {0} line #{1}: Encountered another function definition in function {2}. Missing ENDFUNCTION?".format(
-                                token.filename, token.lineNum, curr_func))
+                            "Error in file {0} line #{1}: Encountered another function definition in function {2}."
+                            " Missing ENDFUNCTION?".format(token.filename, token.lineNum, curr_func))
                         exit(1)
                     in_function = True
 
@@ -1200,7 +1198,7 @@ class VirtualBasicCode:
                     # First get return type
                     self.discard_leading_whitespace(self.tokens)
                     func_type = self.tokens.pop(0)
-                    if not func_type.tokenID in self.varDecTokens:
+                    if func_type.tokenID not in self.varDecTokens:
                         # Not a delcaration. Die
                         logger.error(
                             "Error: in file {0} line #{1}: Cannot declare a function to be of type '{2}'.".format(
@@ -1229,7 +1227,7 @@ class VirtualBasicCode:
                     # Read ParmaType ParamName , triplets until we reach the end
                     while next_token.tokenID != "RPAREN":
                         # Token shold be a type declaration
-                        if not next_token.tokenID in self.varDecTokens:
+                        if next_token.tokenID not in self.varDecTokens:
                             logger.error("Error: File: {0} line #{1}: In function declaration " +
                                          "{2}, expected parameter type '{3}'.".format(
                                              token.filename, token.lineNum, func_name.tokenText, next_token.tokenText))
@@ -1239,8 +1237,9 @@ class VirtualBasicCode:
                         param_name = self.tokens.pop(0)
                         if param_name.tokenID != "IDENTIFIER":
                             logger.error(
-                                "Error: File: {0} line #{1}: In function {2}: Expected a parameter name, got {3}".format(
-                                    token.filename, token.lineNum, func_name.tokenText, param_name.tokenText))
+                                "Error: File: {0} line #{1}: In function {2}: Expected a parameter name, "
+                                "got {3}".format(token.filename, token.lineNum, func_name.tokenText,
+                                                 param_name.tokenText))
                             exit(1)
                         # Set up type-specific stuff
 
@@ -1248,16 +1247,16 @@ class VirtualBasicCode:
                         this_func.paramType.append(next_token.tokenID)
                         this_func.totalParamCount += 1
                         # Increment the count of appropriate param type.
-                        for case in switch.Switch(next_token.tokenID):
-                            if case('INTDEC'):
+                        for set_param_type_case in switch.Switch(next_token.tokenID):
+                            if set_param_type_case('INTDEC'):
                                 this_func.intParams += 1
                                 have_int_param = True
                                 break
-                            if case('FLOATDEC'):
+                            if set_param_type_case('FLOATDEC'):
                                 this_func.floatParams += 1
                                 have_float_param = True
                                 break
-                            if case('STRINGDEC'):
+                            if set_param_type_case('STRINGDEC'):
                                 this_func.stringParams += 1
                                 have_string_param = True
 
@@ -1269,9 +1268,9 @@ class VirtualBasicCode:
                             next_token = self.tokens.pop(0)
                         if next_token.tokenID == 'EOL':
                             # Reached end of line before we got a token. You sux Mr./Ms. Programmer!
-                            logger.error(
-                                "Error in file: {0} line #{1}: function declaration {2}, unexpected end of line (missing closing paren?).".format(
-                                    token.filname, token.lineNum, func_name.tokenText))
+                            logger.error("Error in file: {0} line #{1}: function declaration {2}, unexpected end of "
+                                         "line (missing closing paren?).".format(token.filname, token.lineNum,
+                                                                                 func_name.tokenText))
                             exit(1)
 
                     # Ok, got the right paren to close out the function. Populate the function definition with the
@@ -1279,7 +1278,7 @@ class VirtualBasicCode:
                     # all types of params, since we need know the offset from the
                     # start of the list.
 
-                    # We set up two repalcement values. One is for the function call set up,
+                    # We set up two replacement values. One is for the function call set up,
                     # which references values above the current parameter pointer.
                     # The second is the parameter references in the function call
                     # itself, which always refers to values below the current 
@@ -1293,51 +1292,50 @@ class VirtualBasicCode:
                     int_param_seen = 0
                     string_param_seen = 0
                     for i in range(this_func.totalParamCount):
-                        for case in switch.Switch(this_func.paramType[i]):
-                            if case('FLOATDEC'):
+                        for param_count_case in switch.Switch(this_func.paramType[i]):
+                            if param_count_case('FLOATDEC'):
                                 # Come up with replacement text for this param in the
                                 # function
-                                #
-                                getString = "sfFloatParam(sfFloatParamPointer"
-                                setString = getString
+                                get_string = "sfFloatParam(sfFloatParamPointer"
+                                set_string = get_string
                                 if float_param_seen == this_func.floatParams - 1:
                                     # Last param
-                                    getString += ")"
+                                    get_string += ")"
 
                                 else:
                                     # Not last param, have to subtract an offset
-                                    getString += "-" + str(this_func.floatParams - 1 - float_param_seen) + ")"
-                                this_func.paramGet[this_func.paramName[i]] = getString
-                                setString += " + " + str(1 + float_param_seen) + ")"
-                                this_func.paramSet[this_func.paramName[i]] = setString
+                                    get_string += "-" + str(this_func.floatParams - 1 - float_param_seen) + ")"
+                                this_func.paramGet[this_func.paramName[i]] = get_string
+                                set_string += " + " + str(1 + float_param_seen) + ")"
+                                this_func.paramSet[this_func.paramName[i]] = set_string
                                 float_param_seen += 1
                                 break
-                            if case('INTDEC'):
-                                getString = "siIntParam(siIntParamPointer"
-                                setString = getString
+                            if param_count_case('INTDEC'):
+                                get_string = "siIntParam(siIntParamPointer"
+                                set_string = get_string
                                 if int_param_seen == this_func.intParams - 1:
                                     # Last param
-                                    getString += ")"
+                                    get_string += ")"
                                 else:
                                     # Not last param, have to subtract an offset
-                                    getString += "-" + str(this_func.intParams - 1 - int_param_seen) + ")"
-                                this_func.paramGet[this_func.paramName[i]] = getString
-                                setString += " + " + str(1 + int_param_seen) + ")"
-                                this_func.paramSet[this_func.paramName[i]] = setString
+                                    get_string += "-" + str(this_func.intParams - 1 - int_param_seen) + ")"
+                                this_func.paramGet[this_func.paramName[i]] = get_string
+                                set_string += " + " + str(1 + int_param_seen) + ")"
+                                this_func.paramSet[this_func.paramName[i]] = set_string
                                 int_param_seen += 1
                                 break
-                            if case('STRINGDEC'):
-                                getString = "ssStringParam(ssStringParamPointer"
-                                setString = getString
+                            if param_count_case('STRINGDEC'):
+                                get_string = "ssStringParam(ssStringParamPointer"
+                                set_string = get_string
                                 if string_param_seen == this_func.stringParams - 1:
                                     # Last param
-                                    getString += ")"
+                                    get_string += ")"
                                 else:
                                     # Not last param, have to subtract an offset
-                                    getString += "-" + str(this_func.stringParams - 1 - string_param_seen) + ")"
-                                this_func.paramGet[this_func.paramName[i]] = getString
-                                setString += " + " + str(1 + string_param_seen) + ")"
-                                this_func.paramSet[this_func.paramName[i]] = setString
+                                    get_string += "-" + str(this_func.stringParams - 1 - string_param_seen) + ")"
+                                this_func.paramGet[this_func.paramName[i]] = get_string
+                                set_string += " + " + str(1 + string_param_seen) + ")"
+                                this_func.paramSet[this_func.paramName[i]] = set_string
                                 string_param_seen += 1
                                 break
                     # Done setting up function object
@@ -1365,7 +1363,7 @@ class VirtualBasicCode:
                 # must return a value.
                 if case('RETURN'):
                     # See if this is a return in a function
-                    retVar = ""
+                    ret_var = ""
                     if in_function:
                         # OK, need to figure out what to return.
                         # Get the next token. It should be a return value
@@ -1373,21 +1371,21 @@ class VirtualBasicCode:
 
                         self.discard_leading_whitespace(self.tokens)
                         # retVal = self.get_remainder_of_statement_or_line(self.tokens)
-                        for case in switch.Switch(this_func.retType):
-                            if case("INTDEC"):
-                                retVar = "riReturnIntValue"
+                        for ret_val_case in switch.Switch(this_func.retType):
+                            if ret_val_case("INTDEC"):
+                                ret_var = "riReturnIntValue"
                                 have_int_return = True
                                 break
-                            if case("FLOATDEC"):
-                                retVar = "rfReturnFloatValue"
+                            if ret_val_case("FLOATDEC"):
+                                ret_var = "rfReturnFloatValue"
                                 have_float_return = True
                                 break
-                            if case("STRINGDEC"):
-                                retVar = "rsReturnStringValue"
+                            if ret_val_case("STRINGDEC"):
+                                ret_var = "rsReturnStringValue"
                                 have_string_return = True
                                 break
                         # Insert returnVar = <statement>
-                        new_tokens += self.tokenize_string(token.filename, token.lineNum, retVar + " = ")
+                        new_tokens += self.tokenize_string(token.filename, token.lineNum, ret_var + " = ")
                         # new_tokens += retVal
                         # Insert the goto that jumps to end of function after
                         # this statement's end
@@ -1414,31 +1412,35 @@ class VirtualBasicCode:
                         if token.tokenText in this_func.paramName:
                             # Yes, it's a param. Replace it.
                             # We need to tokenize the parameter value and append
-                            paramTok = self.tokenize_string(token.filename, token.lineNum,
-                                                            this_func.paramGet[token.tokenText])
-                            new_tokens += paramTok
+                            param_tok = self.tokenize_string(token.filename, token.lineNum,
+                                                             this_func.paramGet[token.tokenText])
+                            new_tokens += param_tok
                             break
                         # If we are in a variable definition, we want to rename the variable and save it.
                         if in_var_def:
-                            newName = this_func.name + "_" + token.tokenText
-                            local_var_list[token.tokenText] = newName
-                            token.tokenText = newName
+                            new_name = this_func.name + "_" + token.tokenText
+                            local_var_list[token.tokenText] = new_name
+                            token.tokenText = new_name
                         elif token.tokenText in local_var_list:
                             token.tokenText = local_var_list[token.tokenText]
                         new_tokens.append(token)
                         break
 
                 # Set flag if we are in a variable def.
-                if case('INTDEC'): pass
-                if case('FLOATDEC'): pass
+                if case('INTDEC'):
+                    pass
+                if case('FLOATDEC'):
+                    pass
                 if case('STRINGDEC'):
                     in_var_def = True
                     new_tokens.append(token)
                     break
 
                 # reaching EOL, : , or =  always ends a variable definition
-                if case('EOL'): pass
-                if case('STATEMENTSEP'): pass
+                if case('EOL'):
+                    pass
+                if case('STATEMENTSEP'):
+                    pass
                 if case('EQUATE'):
                     in_var_def = False
                     new_tokens.append(token)
@@ -1449,11 +1451,11 @@ class VirtualBasicCode:
                     new_tokens.append(token)
 
         # Define arrays for parameters, and declare return values
-        prefixTokens = self.declare_params_and_returns(have_int_param, have_float_param, have_string_param,
-                                                       have_int_return, have_float_return, have_string_return)
+        prefix_tokens = self.declare_params_and_returns(have_int_param, have_float_param, have_string_param,
+                                                        have_int_return, have_float_return, have_string_return)
 
         # Update code
-        self.tokens = prefixTokens + new_tokens
+        self.tokens = prefix_tokens + new_tokens
 
     def dump_tokens(self, tokens):
         """
@@ -1657,6 +1659,7 @@ class VirtualBasicCode:
             # Need to see if we have to save off the return value into an array.
             # this has to happen when we have multiple function calls in the
             # statement that return the same data type.
+            value_ref = None  # Pycharm whines that this might not be defined unless we assign it a value
             for case in switch.Switch(my_func.retType):
                 if case("INTDEC"):
                     if int_rets > 1:
@@ -1763,7 +1766,7 @@ class VirtualBasicCode:
             if tokens[index].tokenID == 'FUNCTIONCALL':
                 # Find the return type of this function call
                 func_name = tokens[index].tokenText[1:-1]
-                if not func_name in self.funcDefs:
+                if func_name not in self.funcDefs:
                     # This function isn't defined.
                     logger.error("Error in file {0} starting on line {1}: Call to undefined function '{2}'.".format(
                         tokens[index].filename, tokens[index].lineNum, func_name))
@@ -1784,7 +1787,8 @@ class VirtualBasicCode:
         # Reached end of tokens, return what we have
         return int_count, float_count, string_count
 
-    def insert_before_last_statement(self, tokens, insert):
+    @staticmethod
+    def insert_before_last_statement(tokens, insert):
         """ Find last statement separator in token list and insert tokens before it
         :param tokens: List of tokens to insert into
         :param insert: The tokrns to insert
@@ -1844,7 +1848,7 @@ class VirtualBasicCode:
                 if case():
                     # See if this is valid to have in an expression in
                     # a parameter list
-                    if not token.tokenID in self.allowedInParameterExp:
+                    if token.tokenID not in self.allowedInParameterExp:
                         logger.error(
                             "Error in file {0} line #{1}: Illegal element type {3} in call parameter list '{2}'".format(
                                 token.filename, token.lineNum, token.tokenText, token.tokenID))
@@ -1936,8 +1940,7 @@ class VirtualBasicCode:
                 # print("Func def found while scaning for vars")
                 in_func = True
                 new_tokens.append(token)
-                next_token = tokens.pop(
-                    0)  # FIXME: Huh? What? This is never used? Or is this popping the assumed whitespace?
+                tokens.pop(0)  # FIXME: Why are we popping a token here?
                 self.discard_leading_whitespace(self.tokens)
                 func_type = self.tokens.pop(0)  # FIXME: Verify that this is a valid return type?
                 new_tokens.append(func_type)
@@ -1965,13 +1968,13 @@ class VirtualBasicCode:
                     var_name.tokenText = var_name.tokenText.upper().replace(" ", "")
                     if in_func:
                         # In functions, prepend the name of the function with an underscore
-                        # print("Changing local var from {0} to {1}".format(var_name.tokenText, func_name + "_" + var_name.tokenText))
                         var_name.tokenText = func_name + "_" + var_name.tokenText
-                    if not var_name.tokenID in self.idTokens and not var_name.tokenID in self.arrayRefs:
+                    if var_name.tokenID not in self.idTokens and var_name.tokenID not in self.arrayRefs:
                         # Not a valid variable reference
                         logger.error("Error in file {0} line #{1}: variable declaration {2}"
-                                     "followed by non-variable reference {3}.".format(
-                            token.filename, token.lineNum, token.tokenText, var_name.tokenText))
+                                     "followed by non-variable reference "
+                                     "{3}.".format(token.filename, token.lineNum, token.tokenText,
+                                                   var_name.tokenText))
                         exit(1)
 
                     # Append to list of vars we have found
@@ -2027,7 +2030,7 @@ class VirtualBasicCode:
             else:
                 # Not a variable def and not some special case... Just append
                 new_tokens.append(token)
-        tokens = new_tokens
+        # tokens = new_tokens
         # print("Declared Variables")
         # self.pp.pprint(dec_var_list)
         return new_tokens, dec_var_list
@@ -2096,8 +2099,9 @@ class VirtualBasicCode:
                                                                                                token.tokenText))
         return undef_vars
 
-    def get_predef_apl_varnames(self, predefvars):
-        """ Create a reverse lookup dictionary that links applesoft varnames to their definitions"""
+    @staticmethod
+    def get_predef_apl_varnames(predefvars):
+        """ Create a reverse lookup dictionary that links applesoft varnames to their vbpp names"""
         varnames = {}
         for var in predefvars:
             varnames[predefvars[var]['asoftvar']] = var
@@ -2131,9 +2135,8 @@ class VirtualBasicCode:
             if self.havePreDefs:
                 if trunc_var in self.predefaplvarsnames:
                     logger.debug(
-                        "Error: undeclared variable {0} already defined in pre-defined variable file {1} (".format(
-                            variable,
-                        ))
+                        "Error: undeclared variable {0} already defined in pre-defined variable file "
+                        "{1}".format(variable, self.defines["VARFILE"]))
                     exit(1)
             reserved_vars[trunc_var] = var_type
         return reserved_vars
@@ -2154,11 +2157,12 @@ class VirtualBasicCode:
             firstchar, secondchar = divmod(value, 26)
             return chr(65 + firstchar) + chr(65 + secondchar)
 
-    def add_predefs_to_reserved_vars(self):
-        """
-        Add variables from predef file to the list of currenlt-assigned vars.
-        """
-        self.reservedVars = self.reservedVars + self.a
+    # FIXME: this appears to be broken and not used. Remove if nothing falls apart without it.
+    # def add_predefs_to_reserved_vars(self):
+    #     """
+    #     Add variables from predef file to the list of currently-assigned vars.
+    #     """
+    #     self.reservedVars = self.reservedVars + self.a
 
     def assign_names_to_defvars(self):
         """
@@ -2185,11 +2189,11 @@ class VirtualBasicCode:
                 if variable in self.predefvars:
                     if self.predefvars[variable]['type'] != vartype:
                         logger.error(
-                            "Error: variable {0} declared as type {1} on line {2} of file {3} conflicts with the definition of type {4} on line {5} of file {6}".format(
-                                variable, vartype, self.decVarList[variable]['linenum'],
-                                self.decVarList[variable]['filename'], self.predefvars[variable]['type'],
-                                self.predefvars[variable]['linenum'], self.predefvars[variable]['filename']
-                            ))
+                            "Error: variable {0} declared as type {1} on line {2} of file {3} conflicts with the "
+                            "definition of type {4} on line {5} of file "
+                            "{6}".format(variable, vartype, self.decVarList[variable]['linenum'],
+                                         self.decVarList[variable]['filename'], self.predefvars[variable]['type'],
+                                         self.predefvars[variable]['linenum'], self.predefvars[variable]['filename']))
                         exit(1)
                     varname = self.predefvars[variable]['asoftvar']
                     logger.debug("Found pre-assigned applesoft var '{0}' for variable '{1}'".format(varname, variable))
@@ -2214,11 +2218,13 @@ class VirtualBasicCode:
 
                 # Add type identifiers if necessary
                 for case in switch.Switch(vartype):
-                    if case('INTDECARRAY'): pass
+                    if case('INTDECARRAY'):
+                        pass
                     if case('INTDEC'):
                         varname += '%'
                         break
-                    if case('STRINGDECARRAY'): pass
+                    if case('STRINGDECARRAY'):
+                        pass
                     if case('STRINGDEC'):
                         varname += '$'
                         break
@@ -2283,7 +2289,7 @@ class VirtualBasicCode:
         else:
             return ""
 
-    def handleLongIfs(self):
+    def handle_long_ifs(self):
         """
         Handle the longif statement, which is in the format:
 
@@ -2348,18 +2354,18 @@ class VirtualBasicCode:
                         logger.error("Error in file {0} line #{1}: Could not find THEN for LONGIF".format(
                             token.filename, token.lineNum))
                         exit(1)
-                    startLabel = "longif-{0}-start".format(if_counter)
-                    jumpLabel = "longif-{0}-1".format(if_counter)
+                    start_label = "longif-{0}-start".format(if_counter)
+                    jump_label = "longif-{0}-1".format(if_counter)
                     # Begin by pushing the ON. Note the 2- here is to put the true and false
                     # cases in a logical order (true case first, false case second).
                     new_code += self.tokenize_string(token.filename, token.lineNum, "on 2-(")
                     new_code += expr
                     # Complete GOTO portion and add line label
                     new_code += self.tokenize_string(token.filename, token.lineNum,
-                                                     ") GOTO @{0},@{1}\n_{0}".format(startLabel, jumpLabel))
+                                                     ") GOTO @{0},@{1}\n_{0}".format(start_label, jump_label))
                     # Save jumplabel onto the stack
                     longif_stack.append(if_counter)
-                    target_stack.append(jumpLabel)
+                    target_stack.append(jump_label)
                     continue_stack.append(1)
                     break
                 if case('ELSE'):
@@ -2426,7 +2432,7 @@ class VirtualBasicCode:
                         ))
                         exit(1)
                     # Done with this if, pop it off the stack.
-                    ifID = longif_stack.pop()
+                    if_id = longif_stack.pop()
                     # Get the previous label off of the stack, see if it 
                     # was the end label
                     old_label = target_stack.pop()
@@ -2435,7 +2441,7 @@ class VirtualBasicCode:
                         # exit target onto the stack. That means we need to create 
                         # two targets: one for the exit and one for the 
                         # continuation
-                        end_label = "longif-{0}-exit".format(ifID)
+                        end_label = "longif-{0}-exit".format(if_id)
                         new_code += self.tokenize_string(token.filename, token.lineNum, "\n_{0}\n".format(end_label))
                     new_code += self.tokenize_string(token.filename, token.lineNum, "\n_{0}\n".format(old_label))
                     continue_stack.pop()
@@ -2691,8 +2697,8 @@ class VirtualBasicCode:
                     have_trys = True
                     # Add code that saves off the ONERR state
                     new_code += self.tokenize_string(token.filename, token.lineNum,
-                                                     "vbppTryDepth++ : GOSUB @vbppLibSaveOnerr : ONERR GOTO @vbppTry-{0}-Catch-Start\n".format(
-                                                         try_count))
+                                                     "vbppTryDepth++ : GOSUB @vbppLibSaveOnerr : "
+                                                     "ONERR GOTO @vbppTry-{0}-Catch-Start\n".format(try_count))
                     # Save state of stack so we can rool back to it in case of error
                     new_code += self.tokenize_string(token.filename, token.lineNum,
                                                      "vbppStackPin(vbppTryDepth) = peek(248)")
@@ -2702,9 +2708,8 @@ class VirtualBasicCode:
                     # Jump over the catch statements
                     if have_err_all:
                         logger.error(
-                            "Error in file {0} line #{1}: ERR_ALL error code must be caught last in a TRY block.".format(
-                                token.filename, token.lineNum
-                            ))
+                            "Error in file {0} line #{1}: ERR_ALL error code must be caught last in a TRY "
+                            "block.".format(token.filename, token.lineNum))
                         exit(1)
 
                     catch_count += 1
@@ -2722,8 +2727,9 @@ class VirtualBasicCode:
                                                          "_vbppTry-{0}-Catch-Start\n".format(try_count))
                         # Disable error handler, clear stack back to the TRY statement,  and Get error value
                         new_code += self.tokenize_string(token.filename, token.lineNum,
-                                                         'poke 216,0 : poke 223,vbppStackPin(vbppTryDepth) : CALL -3288 :' \
-                                                         ' vbppErrVal = peek(222) : GOSUB @vbppLibRestoreOnerr : vbppTryDepth--\n')
+                                                         'poke 216,0 : poke 223,vbppStackPin(vbppTryDepth) : '
+                                                         'CALL -3288 : vbppErrVal = peek(222) : '
+                                                         'GOSUB @vbppLibRestoreOnerr : vbppTryDepth--\n')
                     else:
                         # Add in jump to end of previous CATCH to go to end of try-catch block
                         new_code += self.tokenize_string(token.filename, token.lineNum,
@@ -2754,12 +2760,12 @@ class VirtualBasicCode:
                                 if not self.get_nth_right_nonspace_token_obj(self.tokens,
                                                                              1).tokenID in self.statementSeps:
                                     # Error: can only use int literals (usually from DEFINED values) in a catch list
-                                    logger.error('Error in file {0} line #{1}: Illegal element "{2}"' \
-                                                 ' following a ERR_ALL in CATCH statement. ERR_ALL must be' \
-                                                 ' the only element in the CATCH list.'.format(
-                                        catch_val.filename, catch_val.lineNum,
-                                        self.get_nth_right_nonspace_token_obj(self.tokens, 1).tokenText
-                                    ))
+                                    logger.error('Error in file {0} line #{1}: Illegal element "{2}"' 
+                                                 ' following a ERR_ALL in CATCH statement. ERR_ALL must be' 
+                                                 ' the only element in the CATCH '
+                                                 'list.'.format(catch_val.filename, catch_val.lineNum,
+                                                                self.get_nth_right_nonspace_token_obj(self.tokens,
+                                                                                                      1).tokenText))
                                     exit(1)
                                 break
 
@@ -2770,10 +2776,10 @@ class VirtualBasicCode:
                         else:
                             if have_err_all or catch_val.tokenText == '9999':
                                 # ERR_ALL must be in a catch by itself, and it must be last.
-                                logger.error('Error in file {0} line #{1}: ERR_ALL must be' \
-                                             ' only error code in a CATCH statement.'.format(
-                                    catch_val.filename, catch_val.lineNum, catch_val.tokenText
-                                ))
+                                logger.error('Error in file {0} line #{1}: ERR_ALL must be' 
+                                             ' only error code in a CATCH '
+                                             'statement.'.format(catch_val.filename, catch_val.lineNum,
+                                                                 catch_val.tokenText))
                                 exit(1)
                             new_code += self.tokenize_string(token.filename, token.lineNum,
                                                              " OR vbppErrVal = {0}".format(catch_val.tokenText))
@@ -2783,7 +2789,7 @@ class VirtualBasicCode:
                             in_catch_list = False
                         else:
                             self.extract_to_token_type(self.tokens, "PUNCTUATION")
-                            foo = self.tokens.pop(0)
+                            # foo = self.tokens.pop(0)
                             # print("Popped token type '{0}' value '{1}'".format(foo.tokenID, foo.tokenText))
 
                     if have_err_all:
@@ -2841,7 +2847,7 @@ class VirtualBasicCode:
         else:
             max_try_depth = 5
         try_vars += self.tokenize_string(token.filename, token.lineNum,
-                                         'float vbppStackPin({0}), vbppCurlSv({0}),' \
+                                         'float vbppStackPin({0}), vbppCurlSv({0}),' 
                                          ' vbppTextPsv({0}), vbppErrFlag({0})'.format(max_try_depth))
 
         return try_vars
@@ -2851,27 +2857,27 @@ class VirtualBasicCode:
             Generate support code for try/catch to end of source
         :param token: A token to use to get a linenumber and filename to associate with the try/catch code
         """
-        tryLib = self.tokenize_string(token.filename, token.lineNum,
-                                      "_vbppLibSaveOnerr\n")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "vbppCurlSv(vbppTryDepth) = PEEK(246) + PEEK(247) * 256 :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "vbppTextPsv(vbppTryDepth) = PEEK(244) + PEEK(245) * 256 :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "vbppErrFlag(vbppTryDepth) = PEEK(216) : RETURN\n")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "_vbppLibRestoreOnerr\n")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "poke 246, vbppCurlSv(vbppTryDepth)-INT(vbppCurlSv(vbppTryDepth)/256)*256 :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "poke 247, INT(vbppCurlSv(vbppTryDepth)/256) :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "poke 244, vbppTextPsv(vbppTryDepth)-INT(vbppTextPsv(vbppTryDepth)/256)*256 :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "poke 245, INT(vbppTextPsv(vbppTryDepth)/256) :")
-        tryLib += self.tokenize_string(token.filename, token.lineNum,
-                                       "POKE 216, vbppErrFlag(vbppTryDepth) : RETURN\n")
-        return tryLib
+        try_lib = self.tokenize_string(token.filename, token.lineNum,
+                                       "_vbppLibSaveOnerr\n")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "vbppCurlSv(vbppTryDepth) = PEEK(246) + PEEK(247) * 256 :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "vbppTextPsv(vbppTryDepth) = PEEK(244) + PEEK(245) * 256 :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "vbppErrFlag(vbppTryDepth) = PEEK(216) : RETURN\n")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "_vbppLibRestoreOnerr\n")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "poke 246, vbppCurlSv(vbppTryDepth)-INT(vbppCurlSv(vbppTryDepth)/256)*256 :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "poke 247, INT(vbppCurlSv(vbppTryDepth)/256) :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "poke 244, vbppTextPsv(vbppTryDepth)-INT(vbppTextPsv(vbppTryDepth)/256)*256 :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "poke 245, INT(vbppTextPsv(vbppTryDepth)/256) :")
+        try_lib += self.tokenize_string(token.filename, token.lineNum,
+                                        "POKE 216, vbppErrFlag(vbppTryDepth) : RETURN\n")
+        return try_lib
 
     def handle_switch_statements(self):
         """
@@ -3025,7 +3031,8 @@ class VirtualBasicCode:
 
     def remove_empty_lines_and_statements(self):
         """
-        Remove any empty lines or statements from source code. Called when statements might have been deleted from source.
+        Remove any empty lines or statements from source code. Called when statements might have been deleted
+        from source.
         """
         new_code = []
         while len(self.tokens) > 0:
@@ -3073,7 +3080,8 @@ class VirtualBasicCode:
         """
         Read a .json file that contains predefined mappings of VirtialBasic++ variables to
          Applesoft variables.
-        :return: Dictionary containing the predefined variable names and applesoft definitions. If no file was found, returns an empty dict.
+        :return: Dictionary containing the predefined variable names and applesoft definitions. If no file was found,
+        returns an empty dict.
         """
         logger = logging.getLogger('VirtualBasic')
         pre_def_vars = {}  # Return empty dict if the file isn't found.
@@ -3083,14 +3091,13 @@ class VirtualBasicCode:
             try:
                 with open(var_file_name) as in_file:
                     pre_def_vars = json.load(in_file)
-            except:
-                e = sys.exc_info()[0]
-                logger.error("Error reading variable file {0}: {1}".format(var_file_name, e))
+            except Exception as e:
+                logger.error("Error reading variable file {0}: {1}".format(var_file_name, str(e)))
                 exit(1)
         logger.info('Read variable file {0}'.format(var_file_name))
         return pre_def_vars
 
-    def write_var_file(self, preDefVars):
+    def write_var_file(self, pre_def_vars):
         """
         Write the variable definitions out to a file
         :return: None
@@ -3099,11 +3106,10 @@ class VirtualBasicCode:
         varfilename = self.defines["VARFILE"]
         try:
             with open(varfilename, 'w') as out_file:
-                json.dump(preDefVars, out_file, sort_keys=True,
+                json.dump(pre_def_vars, out_file, sort_keys=True,
                           indent=4, separators=(',', ': '))
-        except:
-            e = sys.exc_info()[0]
-            logger.error("Error writing variable file {0}: {1}".format(varfilename, e))
+        except Exception as e:
+            logger.error("Error writing variable file {0}: {1}".format(varfilename, str(e)))
             exit(1)
         logger.info("Wrote variable file {0}.".format(varfilename))
 
@@ -3116,7 +3122,11 @@ class Basic(VirtualBasicCode):
     print code.basic()
     print code.msg"""
 
-    def __init__(self, li=[], args=[], na_script="none"):
+    def __init__(self, li=None, args=None, na_script="none"):
+        if not li:
+            li = []
+        if not args:
+            args = []
         VirtualBasicCode.__init__(self, li, args, na_script)
 
     def basic(self):
@@ -3199,7 +3209,9 @@ class Compression(VirtualBasicCode):
     print code.compression()
     print code.msg"""
 
-    def __init__(self, li=[]):
+    def __init__(self, li=None):
+        if not li:
+            li = []
         VirtualBasicCode.__init__(self, li)
 
     def compression(self):
@@ -3221,7 +3233,9 @@ class BasToBaz:
     ex: code = BasToBaz(lines)
         text = code.to_virtual()"""
 
-    def __init__(self, li=[]):
+    def __init__(self, li=None):
+        if not li:
+            li = []
         self.lines = li
         self.root = ""
         self.links = {}
@@ -3268,7 +3282,8 @@ class BasToBaz:
                       "tutiorism", "tychism", "ubiquitarianism", "undulationism", "universalism", "utilitarianism",
                       "vitalism", "voluntarism", "zoism", "zoomorphism", "zootheism"]
 
-    def int2words(self, number):
+    @staticmethod
+    def int2words(number):
         """Convert a string of digits to spelled-out digits. For some reason."""
         nums = {"0": "Zero", "1": "One", "2": "Two", "3": "Three", "4": "Four",
                 "5": "Five", "6": "Six", "7": "Seven", "8": "Eight", "9": "Nine"}
@@ -3309,11 +3324,11 @@ class BasToBaz:
 
     def replace_on_branches(self, lines):
         """ Similar to above, but handles "on (goto|gosub) 10, 20, 30, ..." """
-        on_branch_re = re.compile(r"(on\s+.+?(?:goto|gosub)\s+)([0-9\,\s]+)")
+        on_branch_re = re.compile(r"(on\s+.+?(?:goto|gosub)\s+)([0-9,\s]+)")
         new_code = []
         for line in lines:
             if on_branch_re.search(line):
-                line = on_branch_re.sub(self.onBranchRep, line)
+                line = on_branch_re.sub(self.on_branch_rep, line)
             new_code.append(line)
         return new_code
 
@@ -3333,45 +3348,47 @@ class BasToBaz:
                 rep.append("@" + label)
         return match.group(1) + ", ".join(rep)
 
-    # def find_links(self, lines):
-    #     """Another function to find gotos/gosubs/then brahnces, apparently... not sure if this
-    #        is live code or not -gg
-    #        :param lines: List of strings to operate on
-    #        """
-    #     result = []
-    #     goto_re = re.compile("goto([ 0-9]+)")
-    #     gosub_re = re.compile("gosub([ 0-9]+)")
-    #     then_re = re.compile("then([ 0-9]+)")
-    #     for line in lines:
-    #         if goto_re.search(line):
-    #             occurrences = goto_re.findall(line)
-    #             for res in occurrences:
-    #                 if res.strip() not in result:
-    #                     result.append(res.strip())
-    #         if gosub_re.search(line):
-    #             occurrences = gosub_re.findall(line)
-    #             for res in occurrences:
-    #                 if res.strip() not in result:
-    #                     result.append(res.strip())
-    #         if then_re.search(line):
-    #             occurrences = then_re.findall(line)
-    #             for res in occurrences:
-    #                 if res.strip() not in result:
-    #                     result.append(res.strip())
-    #     return filter(None, result)
+    @staticmethod
+    def find_links(lines):
+        """Another function to find gotos/gosubs/then brahnces, apparently... not sure if this
+           is live code or not -gg
+           :param lines: List of strings to operate on
+           """
+        result = []
+        goto_re = re.compile("goto([ 0-9]+)")
+        gosub_re = re.compile("gosub([ 0-9]+)")
+        then_re = re.compile("then([ 0-9]+)")
+        for line in lines:
+            if goto_re.search(line):
+                occurrences = goto_re.findall(line)
+                for res in occurrences:
+                    if res.strip() not in result:
+                        result.append(res.strip())
+            if gosub_re.search(line):
+                occurrences = gosub_re.findall(line)
+                for res in occurrences:
+                    if res.strip() not in result:
+                        result.append(res.strip())
+            if then_re.search(line):
+                occurrences = then_re.findall(line)
+                for res in occurrences:
+                    if res.strip() not in result:
+                        result.append(res.strip())
+        return filter(None, result)
 
-    def lower_text(self, lines):
+    @staticmethod
+    def lower_text(lines):
         """Lowercase all text in list of strings.
         :param lines: List of strings to operate on
         """
         result = []
-        s = ""
         for line in lines:
             s = line.lower()
             result.append(s)
         return result
 
-    def clean_lines(self, lines):
+    @staticmethod
+    def clean_lines(lines):
         """Strip line endings from strings in list
         :param lines: List of strings to operate on
         """
@@ -3382,7 +3399,8 @@ class BasToBaz:
             result.append(s)
         return result
 
-    def delete_first_space(self, lines):
+    @staticmethod
+    def delete_first_space(lines):
         """Delete leading spaces from list of strings.
         :param lines: List of strings to operate on
         """
@@ -3396,9 +3414,8 @@ class BasToBaz:
     def create_links_map(self):
         """Create list of branches in source code"""
         result = {}
-        liste = self.findLinks(self.lines)
-        liste_int = map(int, liste)
-        liste_int.sort()
+        liste = self.find_links(self.lines)
+        liste_int = sorted(map(int, liste))
         for e in liste_int:
             result[str(e)] = self.isme_name(e)
             # result[str(e)] = self.int2words(e)
@@ -3507,12 +3524,13 @@ class BasToBaz:
                 occurrences = on_re.findall(line)
                 for res in occurrences:
                     x = res.strip()
-                    if x != "" and self.links.has_key(x):
+                    if x != "" and x in self.links:
                         line = line.replace(res, "@" + self.links[x])
             result.append(line)
         return result
 
-    def delLinesNumbers(self, lines):
+    @staticmethod
+    def del_lines_numbers(lines):
         """Delete line numbers.
         :param lines: List of strings to operate on
         """
@@ -3525,17 +3543,17 @@ class BasToBaz:
 
     def to_virtual(self):
         """Convert Applesoft to VirtuaLBasic"""
-        self.lines = self.cleanLines(self.lines)
-        self.lines = self.deleteFirstSpace(self.lines)
-        self.lines = self.lowerText(self.lines)
-        self.lines = self.replaceOnBranches(self.lines)
+        self.lines = self.clean_lines(self.lines)
+        self.lines = self.delete_first_space(self.lines)
+        self.lines = self.lower_text(self.lines)
+        self.lines = self.replace_on_branches(self.lines)
         self.lines = self.replace_branches(self.lines)
-        self.lines = self.insertLineLabels(self.lines)
+        self.lines = self.insert_line_labels(self.lines)
         # self.links = self.create_links_map()
         # self.lines = self.place_links(self.lines)
         # self.lines = self.place_calls(self.lines)
         # self.lines = self.place_calls_on(self.lines)
-        self.lines = self.delLinesNumbers(self.lines)
+        self.lines = self.del_lines_numbers(self.lines)
         return '\n'.join(self.lines)
 
 

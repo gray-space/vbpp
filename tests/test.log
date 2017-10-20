@@ -1,4 +1,4 @@
-VirtualBasic - INFO - Sat Oct  7 14:44:00 2017 Compiling tests/test.baz
+VirtualBasic - INFO - Sun Oct 15 14:50:21 2017 Compiling tests/test.baz
 VirtualBasic - WARNING - File test Line 56: use of undeclared variable a.
 VirtualBasic - WARNING - File test Line 67: use of undeclared variable b.
 VirtualBasic - WARNING - File test Line 93: use of undeclared variable av.
