@@ -1,6 +1,6 @@
 
 # Set these based on your environment.
-AC_JAR = ~/AppleUtils/AppleCommander-1.3.5.13-ac.jar
+AC_JAR = ~/AppleUtils/AppleCommander.jar
 JACE_JAR = ~/AppleUtils/Jace.jar
 TOKENIZER = util/tokenize-asoft
 
@@ -28,14 +28,16 @@ TEST_BINS = $(TEST_OBJECTS:.bas=.bin)
 %.bas:  %.baz 
 	python baz-to-bas.py  --outfile $@ $<
 
-%.bin:  %.bas
+%.bin:  %.bas $(TOKENIZER)
 	$(TOKENIZER) $< $@
 
 test_disk: $(TEST_BINS)
 	cp disk_images/blank.po basic.po
 	for X in $(TEST_BINS); do \
 		echo $$X; \
-		$(AC) -p basic.po $(basename $$X) bas 0x0801 < $$X; \
+		echo `basename $$X | cut -f 1 -d '.'`; \
+		echo $(AC) -p basic.po `basename $$X | cut -f 1 -d '.'` bas 0x0801 < $$X; \
+		$(AC) -p basic.po `basename $$X | cut -f 1 -d '.'` bas 0x0801 < $$X; \
 	done
 	
 	

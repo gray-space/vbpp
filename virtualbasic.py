@@ -125,7 +125,7 @@ class VirtualBasicCode:
     """class VirtualBasicCode version 0.1.5"""
 
     def __init__(self, li=None, args=None, na_script="none"):
-        # PyCharm complains that li and args are mustable if we have the default be []. sowe have to do this
+        # PyCharm complains that li and args are mutable if we have the default be []. so we have to do this
         # logic instead...
         if not li:
             li = []
@@ -150,7 +150,7 @@ class VirtualBasicCode:
         self.predefaplvarsnames = []  # A list of applesoft variables that have been pre-defined.
         self.tokens = []
         # Regular expression scanner to tokenize the VirtualBasoc++ source. Used
-        # by the tokenizer routine. Uses the undocumeted Scanner class in the
+        # by the tokenizer routine. Uses the undocumented Scanner class in the
         # Python regular expression library.
         self.tokenizer = re.Scanner([
             (r'\".*?\"', lambda scanner, token: ("STRING", token)),
@@ -1422,6 +1422,8 @@ class VirtualBasicCode:
                             local_var_list[token.tokenText] = new_name
                             token.tokenText = new_name
                         elif token.tokenText in local_var_list:
+                            # This is a local var ref. Replace its name with the newly defimned name that
+                            # has the function name prepended.
                             token.tokenText = local_var_list[token.tokenText]
                         new_tokens.append(token)
                         break
@@ -1935,19 +1937,19 @@ class VirtualBasicCode:
             # FIXME: this will never work.. the function defs are already gone by the time we process
             # VARS. We need to move this into the findFunctionDefs method.
             # FIXME: is this resolved? Not clear, but adding function prefix to vars seems to work...
-            elif token.tokenID == "FUNCDEC":
-                # For functions, we prepend the name of the function to avoid variable name collisions
-                # print("Func def found while scaning for vars")
-                in_func = True
-                new_tokens.append(token)
-                tokens.pop(0)  # FIXME: Why are we popping a token here?
-                self.discard_leading_whitespace(self.tokens)
-                func_type = self.tokens.pop(0)  # FIXME: Verify that this is a valid return type?
-                new_tokens.append(func_type)
-                # Now get the function name
-                self.discard_leading_whitespace(self.tokens)  # FIXME: should we discard anything?
-                func_name_tok = self.tokens.pop(0)
-                func_name = func_name_tok.tokenText
+            # elif token.tokenID == "FUNCDEC":
+            #     # For functions, we prepend the name of the function to avoid variable name collisions
+            #     # print("Func def found while scaning for vars")
+            #     in_func = True
+            #     new_tokens.append(token)
+            #     tokens.pop(0)  # FIXME: Why are we popping a token here?
+            #     self.discard_leading_whitespace(self.tokens)
+            #     func_type = self.tokens.pop(0)  # FIXME: Verify that this is a valid return type?
+            #     new_tokens.append(func_type)
+            #     # Now get the function name
+            #     self.discard_leading_whitespace(self.tokens)  # FIXME: should we discard anything?
+            #     func_name_tok = self.tokens.pop(0)
+            #     func_name = func_name_tok.tokenText
             elif token.tokenID == "FUNCEND":
                 in_func = False
                 func_name = ""
@@ -2923,7 +2925,7 @@ class VirtualBasicCode:
         switch_stack = []  # Hold the line labels for the else and endifs.
         switch_expression = []  # Holds the expression we are switching on
         case_stack = []  # Holds counter for elseif targets
-        new_code = []  # Transformned code
+        new_code = []  # Transformed code
         switch_counter = 0  # Assign numbers to each long if so we can trace them
         in_switch = False  # Flag to track if we are in a Switch
         have_default = False  # Flag that we have seen a default case
@@ -3139,67 +3141,6 @@ class Basic(VirtualBasicCode):
         result += "".join(self.lines)
         self.code = result
         return result
-
-
-# class Fusion(VirtualBasicCode):
-#     r"""merge all inserts files in Virtual Basic
-#     ex:
-#     root = "/home/loz/bas"
-#     code = Fusion(lines,root)
-#     print code.fusion()
-#     print code.msg"""
-#
-#     def __init__(self, li=[], myRoot=""):
-#         VirtualBasicCode.__init__(self, li)
-#         self.root = myRoot
-#
-#     # def insert_files(self):
-#     #     """Insert external files into the source. Dead code? Uses the old style inserts."""
-#     #     self.otherInsert = 0
-#     #
-#     #     result = []
-#     #     insert_file = re.compile("===insert ([a-zA-Z0-9\/\-\_]+\.baz)===")
-#     #     line_with_hash = re.compile("^\s*\#")
-#     #     insert_file_with_hash = re.compile("\#[\t\s]*===insert [a-zA-Z0-9\/\-\_]+\.baz===.*")
-#     #
-#     #     for line in self.lines:
-#     #         if insert_file.search(line) and not insert_file_with_hash.search(line):
-#     #             m = insert_file.search(line)
-#     #             fichier = self.root + "/" + m.group(1)
-#     #             try:
-#     #                 f = open(fichier, "r")
-#     #                 fic = f.readlines()
-#     #                 for linefic in fic:
-#     #                     if not line_with_hash.search(linefic):
-#     #                         linefic = linefic.replace("\n", "")
-#     #                         result.append(linefic)
-#     #                 f.close()
-#     #             except:
-#     #                 self.msg += "! Warning can't insert file  " + fichier + " ! \n"
-#     #                 # sys.exit(0)
-#     #         else:
-#     #             line = line.replace("\n", "")
-#     #             result.append(line)
-#     #
-#     #     insert_file = re.compile("===insert [a-zA-Z0-9\/\-\_]+\.baz===")
-#     #     for line in result:
-#     #         if insert_file.search(line) and not insert_file_with_hash.search(line):
-#     #             self.otherInsert = 1
-#     #             break
-#     #
-#     #     self.lines = result
-#
-#     def fusion(self):
-#         """merge all insert files in one file"""
-#         result = ""
-#         if self.mode == "local" and self.root != "":  # if root not defined don't try to import insert
-#             self.insert_files()
-#             while self.otherInsert == 1:  # scan again lines to find a new insert
-#                 self.insert_files()
-#         self.msg += "Merged"
-#         result += "\n".join(self.lines)
-#         self.code = result
-#         return result
 
 
 class Compression(VirtualBasicCode):
@@ -3441,47 +3382,6 @@ class BasToBaz:
             else:
                 results.append(line)
         return results
-
-    # def place_links(self, lines):
-    #     """Handle links in a VirtualBasic-generted AppleSoft program being converted back to
-    #        VirtualBasic.
-    #        :param lines: List of strings to operate on
-    #        """
-    #
-    #     result = []
-    #     number_first = re.compile("^([0-9]+)")
-    #     # special for converted virtual basic scripts
-    #     by_name = re.compile("^([0-9 ]+)rem ->([a-z]+)")
-    #     rem_name = re.compile("rem->([a-z]+)")
-    #     for line in lines:
-    #         if number_first.search(line):  # numbered lines
-    #             m = number_first.search(line)
-    #             if rem_name.search(line):  # if rem->link
-    #                 m3 = rem_name.search(line)
-    #                 self.lastRemName = m3.group(1)
-    #
-    #             if self.links.has_key(m.group(1)):  # if key in links list
-    #                 if by_name.search(line):
-    #                     m2 = by_name.search(line)
-    #                     s = "_" + m2.group(2)
-    #                     self.links[m.group(1)] = m2.group(2)
-    #                     self.lastRemName = ""
-    #                 elif self.lastRemName != "":
-    #                     s = number_first.sub("", line)
-    #                     s = "_" + self.lastRemName + "\n" + s.strip()
-    #                     self.links[m.group(1)] = self.lastRemName
-    #                     self.lastRemName = ""
-    #                     del result[-1]  # remove last element of result because is lastRemName
-    #                 else:
-    #                     s = number_first.sub("", line)
-    #                     s = "_" + self.links[m.group(1)] + "\n" + s.strip()
-    #                     self.lastRemName = ""
-    #             else:  # not in links list
-    #                 s = line
-    #         else:  # not numbered lines
-    #             s = line
-    #         result.append(s)
-    #     return result
 
     def place_calls(self, lines):
         """Replace gosub, goto, and then calls with the VirtualBasic @ equivalents
