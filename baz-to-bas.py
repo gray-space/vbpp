@@ -47,7 +47,7 @@ args = parser.parse_args()
 
 myFullPath = os.path.realpath(args.infile)
 (mypath,myfile) = os.path.split(myFullPath)
-print("Root dir: " + mypath)
+print(f"Root dir: {mypath}")
 
 (myfileWithoutExt,myext) = os.path.splitext(myfile)
 
@@ -61,14 +61,14 @@ formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-logger.info("{0} Compiling {1}".format(time.strftime('%c'),args.infile))
+logger.info(f"{time.strftime('%c')} Compiling {args.infile}")
 
 try:
     f = open(args.infile,"r")
     lignes = f.readlines()
     f.close()
 except Exception as e:
-    logger.fatal("Error reading source file {0}: {1}".format(myFullPath, str(e)))
+    logger.fatal(f"Error reading source file {myFullPath}: {str(e)}")
     sys.exit(0)
 
 

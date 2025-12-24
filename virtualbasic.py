@@ -256,7 +256,7 @@ class VirtualBasicCode:
         ], flags=re.IGNORECASE)
         self.idTokens = ["INTVAR", "IDENTIFIER", "STRINGVAR"]  # Different types of variable identifiers
         self.varDecTokens = ["INTDEC", "FLOATDEC", "STRINGDEC"]  # Which tokens declare variables
-        self.decVarList = {}  # List of decleared vars
+        self.decVarList = {}  # List of declared vars
         self.arrayRefs = ["STRINGARRAY", "INTARRAY", "FLOATARRAY"]
         self.statementSeps = ["STATEMENTSEP", "EOL"]  # Things that terminate a statement
         self.unDefVars = {}  # Variables found in the code that were declared
@@ -520,6 +520,8 @@ class VirtualBasicCode:
 
     def replace_duplicated_colon(self):
         """replace :: by :"""
+        # Note: this will likely mess up cases where we have :: in a string... must be a better way
+        # to handle this...
         # result = []
         duplicated_colon = re.compile("::")
         for line in self.lines:
@@ -694,18 +696,8 @@ class VirtualBasicCode:
 
         self.reserves_numbers()
         self.number_uppercase()
-
-        # print("\n\n\nCode before replace gotoGosub")
-        # self.dumpLines(self.lines)
         self.replace_goto_gosub()
-
-        # print("\n\n\nCode before replace Calls")
-        # self.dumpLines(self.lines)
         self.replace_calls()
-
-        # print("\n\n\nCode after replace Calls")
-        # self.dumpLines(self.lines)
-        # self.lines_sorted()
 
         if self.arguments.ultracompact or self.arguments.compact:
             self.replace_prints()
@@ -747,7 +739,6 @@ class VirtualBasicCode:
                 code += '"{0}'.format(line).replace('\n', '"\n')
             else:
                 code += '"{0}'.format(line.code).replace('\n', '"\n')
-        # print(code)
         logger.debug(code)
 
     def find_defs(self):
@@ -788,7 +779,7 @@ class VirtualBasicCode:
 
         for line in self.lines:
             line.code = pattern.sub(lambda x: self.defines[x.group()], line.code)
-            # self.lines = result
+            
 
     def handle_ifdef(self):
         """Scan if #ifdef ... #endif and #ifndef #endif"""
@@ -850,20 +841,14 @@ class VirtualBasicCode:
             # self.tokens = results
             if remainder is not None and remainder != "":
                 # Uh oh... something didn't tokenize
-                logger.error("Syntax error in file {1} at line {0}:\n{3}\n Could not parse \"{2}\".".format(
-                    line.lineNum, line.filename, remainder, line))
-
-                # print("Fatal Error when tokenizing program. Error occurred at: " +
-                #      remainder)
+                logger.error(f"Syntax error in file {line.filename} at line {line.lineNum}:"
+                             f" Could not parse \"{remainder}\".")
                 exit(1)
             for newtoken in linetok:
-                # Append new topken objects based on token tuples from RE tokenizer
+                # Append new token objects based on token tuples from RE tokenizer
                 # Add info from this line of code
                 new_tok = TokenObj(line.filename, line.lineNum, newtoken[0], newtoken[1])
                 tokens.append(new_tok)
-
-                # pp = pprint.PrettyPrinter(indent=4)
-                # pp.pprint(self.tokens)
         return tokens
 
     #
@@ -881,13 +866,12 @@ class VirtualBasicCode:
         token_tuples, remainder = self.tokenizer.scan(code)
         if remainder is not None and remainder != "":
             # Uh oh... something didn't tokenize
-            logger.error(
-                "Syntax error in file {1} at line #{0}:\n{2}\nError at code \"{3}\".".format(file_name, code, line_num,
-                                                                                             code))
+            logger.error(f"Syntax error in file {file_name} at line #{line_num}"
+                         f":\n{code}\nError at code \"{remainder}\".")
             token_count = 0
             logger.error("Parsed tokens on this line")
             for token in token_tuples:
-                logger.error("Token: {0}: '{1}' ({2})".format(token_count, token[0], token[1]))
+                logger.error(f"Token #{token_count}: {token}")
             exit(1)
         for newtoken in token_tuples:
             # Append new topken objects based on token tuples from RE tokenizer
@@ -1002,7 +986,7 @@ class VirtualBasicCode:
         return tokens[index]
 
     def get_left_var_ref(self, tokens):
-        """get the rightmost variable reference in a token list.
+        """get the first varianle to the left in a token list.
         :param tokens: The list of tokens to get varref from.
         :rtype : object
         :return: a variable ref, or a fully-qualified array ref
@@ -2805,14 +2789,11 @@ class VirtualBasicCode:
                 if case('ENDTRY'):
                     # Check for error conditions (not in a TRY, did not have at least one CATCH)
                     if not in_try:
-                        logger.error("Error in file {0} line #{1}: ENDTRY found without a TRY block.".format(
-                            token.filename, token.lineNum
+                        logger.error(f"Error in file {token.filename} line #{token.lineNum}: ENDTRY found without a TRY block.")
                         ))
                         exit(1)
                     if first_catch:
-                        logger.error("Error in file {0} line #{1}: ENDTRY found without any CATCH block.".format(
-                            token.filename, token.lineNum
-                        ))
+                        logger.error(f"Error in file {token.filename} line #{token.lineNum}: ENDTRY found without any CATCH block.")
                         exit(1)
                     # Close off the previous catch statement with a GOTO
                     new_code += self.tokenize_string(token.filename, token.lineNum,
@@ -2859,26 +2840,21 @@ class VirtualBasicCode:
             Generate support code for try/catch to end of source
         :param token: A token to use to get a linenumber and filename to associate with the try/catch code
         """
+
+        try_routine = """_vbppLibSaveOnerr\n
+vbppCurlSv(vbppTryDepth) = PEEK(246) + PEEK(247) * 256 :
+vbppTextPsv(vbppTryDepth) = PEEK(244) + PEEK(245) * 256 :
+vbppErrFlag(vbppTryDepth) = PEEK(216) : RETURN\n
+_vbppLibRestoreOnerr\n
+poke 246, vbppCurlSv(vbppTryDepth)-INT(vbppCurlSv(vbppTryDepth)/256)*256 :
+poke 247, INT(vbppCurlSv(vbppTryDepth)/256) :
+poke 244, vbppTextPsv(vbppTryDepth)-INT(vbppTextPsv(vbppTryDepth)/256)*256 :
+poke 245, INT(vbppTextPsv(vbppTryDepth)/256) :
+POKE 216, vbppErrFlag(vbppTryDepth) : RETURN\n
+"""
+
         try_lib = self.tokenize_string(token.filename, token.lineNum,
-                                       "_vbppLibSaveOnerr\n")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "vbppCurlSv(vbppTryDepth) = PEEK(246) + PEEK(247) * 256 :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "vbppTextPsv(vbppTryDepth) = PEEK(244) + PEEK(245) * 256 :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "vbppErrFlag(vbppTryDepth) = PEEK(216) : RETURN\n")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "_vbppLibRestoreOnerr\n")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "poke 246, vbppCurlSv(vbppTryDepth)-INT(vbppCurlSv(vbppTryDepth)/256)*256 :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "poke 247, INT(vbppCurlSv(vbppTryDepth)/256) :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "poke 244, vbppTextPsv(vbppTryDepth)-INT(vbppTextPsv(vbppTryDepth)/256)*256 :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "poke 245, INT(vbppTextPsv(vbppTryDepth)/256) :")
-        try_lib += self.tokenize_string(token.filename, token.lineNum,
-                                        "POKE 216, vbppErrFlag(vbppTryDepth) : RETURN\n")
+                                       try_routine)
         return try_lib
 
     def handle_switch_statements(self):

@@ -2,20 +2,14 @@
 # Set these based on your environment.
 AC_JAR = ~/AppleUtils/AppleCommander.jar
 JACE_JAR = ~/AppleUtils/Jace.jar
-TOKENIZER = util/tokenize-asoft
-
-AC = java -jar $(AC_JAR)
-JACE = java -jar $(JACE_JAR)  
+TOKENIZER = bt
+AC = ac
+#
+EMULATOR = sa2
 
 execute: test_disk
 	$(JACE) -computer.s7card mass -s7.d1 basic.po 
 
-
-# The tokenizer should be able to do a straight compile in Linux.
-# Does not require any exotic libraries. May also work under
-# other *nix systems, like OS X.
-$(TOKENIZER): util/tokenize-asoft.c
-	gcc -o $(TOKENIZER) util/tokenize-asoft.c
 
 
 TEST_SOURCES = tests/test.baz tests/functest.baz tests/longiftest.baz \
